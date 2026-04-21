@@ -2,16 +2,52 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+// ── Same color system as dashboard ────────────────────────────
+class K {
+  static const acc = Color(0xFF4FDAFB);
+  static const accSoft = Color(0xFFEBF9FE);
+  static const accBorder = Color(0xFFB2EEF9);
+  static const bg = Color(0xFFF3F5F9);
+  static const card = Color(0xFFFFFFFF);
+  static const ink = Color(0xFF0E1117);
+  static const sub = Color(0xFF8690A4);
+  static const line = Color(0xFFE9ECF1);
+  static const surface = Color(0xFFF0F2F6);
+  static const dark = Color(0xFF161B26);
+  static const red = Color(0xFFE53935);
+  static const redSoft = Color(0xFFFFF3F3);
+  static const redBorder = Color(0xFFFDD0D0);
+  static const amber = Color(0xFFF59E0B);
+  static const amberSoft = Color(0xFFFFFAEB);
+  static const amberBorder = Color(0xFFFDE68A);
+  static const green = Color(0xFF16A34A);
+  static const greenSoft = Color(0xFFF0FDF4);
+  static const greenBorder = Color(0xFF86EFAC);
+  static const orange = Color(0xFFEA580C);
+  static const orangeSoft = Color(0xFFFFF7ED);
+  static const blue = Color(0xFF2563EB);
+  static const blueSoft = Color(0xFFEFF6FF);
+  static const blueBorder = Color(0xFFBFD6FF);
+}
+
+TextStyle ts(double sz, FontWeight w, Color c,
+        {double ls = 0, double h = 1.3}) =>
+    GoogleFonts.dmSans(
+        fontSize: sz, fontWeight: w, color: c, letterSpacing: ls, height: h);
+
+// ═════════════════════════════════════════════════════════════
 class FanPage extends StatefulWidget {
   const FanPage({super.key});
-
   @override
   State<FanPage> createState() => _FanPageState();
 }
 
-class _FanPageState extends State<FanPage> with SingleTickerProviderStateMixin {
+class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
+  // ── ORIGINAL LOGIC — untouched ────────────────────────────
   final DatabaseReference dbRef = FirebaseDatabase.instance.ref("iot_data");
 
   bool isFanOn = false;
@@ -22,461 +58,828 @@ class _FanPageState extends State<FanPage> with SingleTickerProviderStateMixin {
 
   late AnimationController _fanController;
 
+  // ── NEW: card entrance + live pulse ──────────────────────
+  late AnimationController _cardAnim;
+  late AnimationController _liveAnim;
+  late Animation<double> _cardA;
+
   @override
   void initState() {
     super.initState();
-    _fanController = AnimationController(
-      duration: const Duration(seconds: 1),
-      vsync: this,
-    );
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ));
 
-    // Listen only — NO automatic logic!
+    // Original fan rotation controller
+    _fanController =
+        AnimationController(duration: const Duration(seconds: 1), vsync: this);
+
+    // Entrance animation
+    _cardAnim = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 900));
+    _cardA = CurvedAnimation(parent: _cardAnim, curve: Curves.easeOutCubic);
+    _cardAnim.forward();
+
+    // Live dot pulse
+    _liveAnim = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1300))
+      ..repeat(reverse: true);
+
     dbRef.onValue.listen(_updateRealtimeData);
   }
 
   @override
   void dispose() {
     _fanController.dispose();
+    _cardAnim.dispose();
+    _liveAnim.dispose();
     super.dispose();
   }
 
-  // -----------------------------------------------------------------------
-  // REALTIME LISTENER — READ ONLY (Auto mode logic REMOVED)
-  // -----------------------------------------------------------------------
+  // ── ORIGINAL: realtime listener ───────────────────────────
   void _updateRealtimeData(DatabaseEvent event) {
     if (!mounted) return;
-
     if (event.snapshot.value == null) return;
-
     final data = Map<String, dynamic>.from(event.snapshot.value as Map);
-
     setState(() {
       co2 = (data["co2"] as num?)?.toDouble() ?? 0;
       isFanOn = (data["fan_status"] ?? "OFF") == "ON";
       autoMode = (data["auto_mode"] ?? "OFF") == "ON";
     });
-
-    // Pure animation — no logic
     isFanOn ? _fanController.repeat() : _fanController.stop();
   }
 
-  // -----------------------------------------------------------------------
-  // MANUAL FAN CONTROL (Blocked when auto mode is ON)
-  // -----------------------------------------------------------------------
+  // ── ORIGINAL: manual fan toggle ───────────────────────────
   Future<void> _toggleFan() async {
     if (autoMode) {
-      _showSnack("Disable auto mode first", Colors.orange);
+      _showSnack("Disable auto mode first", isWarn: true);
       return;
     }
-
     final newStatus = isFanOn ? "OFF" : "ON";
-
     await dbRef.update({"fan_status": newStatus});
-
     setState(() {
       isFanOn = !isFanOn;
       totalOperations++;
       lastAction = "Manual ${isFanOn ? 'activation' : 'deactivation'}";
     });
-
     isFanOn ? _fanController.repeat() : _fanController.stop();
-
-    _showSnack(
-        "Fan turned $newStatus", isFanOn ? Colors.green : Colors.red.shade400);
+    _showSnack("Fan turned $newStatus");
   }
 
-  // -----------------------------------------------------------------------
-  // USER SWITCHES AUTO MODE (ESP will take full control)
-  // -----------------------------------------------------------------------
+  // ── ORIGINAL: auto mode toggle ────────────────────────────
   Future<void> _toggleAutoMode(bool value) async {
     await dbRef.update({"auto_mode": value ? "ON" : "OFF"});
-
     setState(() {
       autoMode = value;
       totalOperations++;
       lastAction = "Switched to ${value ? 'AUTOMATIC' : 'MANUAL'} mode";
     });
-
-    _showSnack("Auto mode ${value ? 'enabled' : 'disabled'}",
-        value ? Colors.blue : Colors.grey);
+    _showSnack("Auto mode ${value ? 'enabled' : 'disabled'}");
   }
 
-  // -----------------------------------------------------------------------
-  // SNACKBAR FUNCTION
-  // -----------------------------------------------------------------------
-  void _showSnack(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+  // ── Snack — matches dashboard style ──────────────────────
+  void _showSnack(String msg, {bool isWarn = false}) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Row(children: [
+        Icon(
+          isWarn ? Icons.warning_rounded : Icons.check_circle_rounded,
+          color: Colors.white,
+          size: 16,
+        ),
+        const SizedBox(width: 8),
+        Text(msg, style: ts(13, FontWeight.w500, Colors.white)),
+      ]),
+      backgroundColor: isWarn ? K.amber : K.dark,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.all(16),
+      duration: const Duration(seconds: 2),
+    ));
   }
 
-  // -----------------------------------------------------------------------
-  // UI
-  // -----------------------------------------------------------------------
+  // ── CO₂ helpers ───────────────────────────────────────────
+  Color get _co2Color {
+    if (co2 <= 400) return K.green;
+    if (co2 <= 700) return K.acc;
+    if (co2 <= 1000) return K.amber;
+    return K.red;
+  }
+
+  String get _co2Status {
+    if (co2 <= 400) return "Excellent";
+    if (co2 <= 700) return "Good";
+    if (co2 <= 1000) return "Moderate";
+    return "Critical";
+  }
+
+  Color get _co2Soft {
+    if (co2 <= 400) return K.greenSoft;
+    if (co2 <= 700) return K.accSoft;
+    if (co2 <= 1000) return K.amberSoft;
+    return K.redSoft;
+  }
+
+  Color get _co2Border {
+    if (co2 <= 400) return K.greenBorder;
+    if (co2 <= 700) return K.accBorder;
+    if (co2 <= 1000) return K.amberBorder;
+    return K.redBorder;
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // BUILD
+  // ═══════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 70,
-        title: _titleBar(),
-        elevation: 4,
-        flexibleSpace: _topGradient(),
-        actions: [_liveBadge()],
-      ),
-      body: _bodyContent(),
+      backgroundColor: K.bg,
+      body: Column(children: [
+        _header(),
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 40),
+            child: AnimatedBuilder(
+              animation: _cardA,
+              builder: (_, __) => Column(children: [
+                _slide(0, _statusStrip()),
+                const SizedBox(height: 14),
+                _slide(1, _fanVisualization()),
+                const SizedBox(height: 14),
+                _slide(2, _co2Monitor()),
+                const SizedBox(height: 14),
+                _slide(3, _controlPanel()),
+                const SizedBox(height: 14),
+                _slide(4, _statisticsCard()),
+              ]),
+            ),
+          ),
+        ),
+      ]),
     );
   }
 
-  Widget _titleBar() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
-            "Fan Control Center",
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
-          ),
-          Text(
-            "Smart Ventilation Management",
-            style: TextStyle(color: Color(0xFF00E676), fontSize: 12),
-          ),
-        ],
-      );
+  // ── Staggered entrance — same as dashboard ────────────────
+  Widget _slide(int i, Widget child) {
+    final start = (i * 0.13).clamp(0.0, 1.0);
+    final end = (start + 0.55).clamp(0.0, 1.0);
+    final anim = CurvedAnimation(
+        parent: _cardA,
+        curve: Interval(start, end, curve: Curves.easeOutCubic));
+    return AnimatedBuilder(
+      animation: anim,
+      builder: (_, __) => Transform.translate(
+        offset: Offset(0, 20 * (1 - anim.value)),
+        child: Opacity(opacity: anim.value.clamp(0.0, 1.0), child: child),
+      ),
+    );
+  }
 
-  Widget _topGradient() => Container(
+  // ── RESPONSIVE HEADER ─────────────────────────────────────
+  Widget _header() => Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.grey.shade900, Colors.grey.shade800],
+          color: K.card,
+          boxShadow: [
+            BoxShadow(
+                color: K.ink.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 2)),
+          ],
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: LayoutBuilder(
+            builder: (_, c) =>
+                c.maxWidth >= 600 ? _headerWide() : _headerMobile(),
           ),
         ),
       );
 
-  Widget _liveBadge() => Container(
-        margin: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFF00E676)),
-          borderRadius: BorderRadius.circular(20),
+  Widget _headerWide() => SizedBox(
+        height: 64,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Brand
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: K.acc,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                        color: K.acc.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3))
+                  ],
+                ),
+                child: const Icon(Icons.eco_rounded,
+                    color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("ArtifTree",
+                      style: ts(14, FontWeight.w800, K.ink, ls: -0.4)),
+                  Text("IoT Platform",
+                      style: ts(9, FontWeight.w500, K.sub, ls: 0.2)),
+                ],
+              ),
+              // Gradient divider
+              Container(
+                width: 1,
+                height: 28,
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      K.line.withValues(alpha: 0),
+                      K.line,
+                      K.line.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+              ),
+              // Page title
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: isFanOn ? K.green : K.sub,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text("Fan Control",
+                        style: ts(14, FontWeight.w700, K.ink, ls: -0.3)),
+                  ]),
+                  const SizedBox(height: 1),
+                  Text("Smart Ventilation · Sector A",
+                      style: ts(10, FontWeight.w400, K.sub)),
+                ],
+              ),
+              const Spacer(),
+              // Live pill
+              _livePill(),
+            ],
+          ),
         ),
+      );
+
+  Widget _headerMobile() => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
         child: Row(
-          children: const [
-            Icon(Icons.circle, size: 10, color: Color(0xFF00E676)),
-            SizedBox(width: 6),
-            Text(
-              "LIVE",
-              style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF00E676)),
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Brand icon
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: K.acc,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                      color: K.acc.withValues(alpha: 0.28),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3))
+                ],
+              ),
+              child:
+                  const Icon(Icons.eco_rounded, color: Colors.white, size: 18),
             ),
-          ],
-        ),
-      );
-
-  Widget _bodyContent() => SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _statusCard(),
-            const SizedBox(height: 16),
-            _fanVisualization(),
-            const SizedBox(height: 16),
-            _co2Monitor(),
-            const SizedBox(height: 16),
-            _controlPanel(),
-            const SizedBox(height: 16),
-            _statisticsCard(),
-          ],
-        ),
-      );
-
-  Widget _statusCard() => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Row(
-          children: [
+            const SizedBox(width: 10),
             Expanded(
-              child: _statusItem(
-                "Fan Status",
-                isFanOn ? "RUNNING" : "STOPPED",
-                isFanOn ? Icons.air : Icons.power_settings_new,
-                isFanOn ? Colors.green : Colors.grey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Fan Control",
+                      style: ts(15, FontWeight.w800, K.ink, ls: -0.4),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1),
+                  Text("Smart Ventilation · Sector A",
+                      style: ts(10, FontWeight.w400, K.sub)),
+                ],
               ),
             ),
-            Container(width: 1, height: 50, color: Colors.grey.shade200),
-            Expanded(
-              child: _statusItem(
-                "Mode",
-                autoMode ? "AUTO" : "MANUAL",
-                autoMode ? Icons.autorenew : Icons.touch_app,
-                autoMode ? Colors.blue : Colors.orange,
-              ),
-            ),
+            const SizedBox(width: 10),
+            _livePill(),
           ],
         ),
       );
 
-  Widget _statusItem(String label, String value, IconData icon, Color color) =>
-      Column(
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-                fontSize: 18, fontWeight: FontWeight.bold, color: color),
+  Widget _livePill() => AnimatedBuilder(
+        animation: _liveAnim,
+        builder: (_, __) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: K.accSoft,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: K.accBorder),
           ),
-        ],
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: K.acc.withValues(alpha: 0.3 + 0.7 * _liveAnim.value),
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text("LIVE", style: ts(9, FontWeight.w700, K.acc, ls: 1)),
+          ]),
+        ),
       );
 
+  // ── STATUS STRIP — dark, mirrors dashboard ────────────────
+  Widget _statusStrip() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          color: K.dark,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(children: [
+          _stripChip(
+            Icons.air_rounded,
+            "Fan",
+            isFanOn ? "Running" : "Stopped",
+            isFanOn ? K.green : K.sub,
+          ),
+          Container(
+            width: 1,
+            height: 30,
+            color: Colors.white12,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+          _stripChip(
+            Icons.autorenew_rounded,
+            "Mode",
+            autoMode ? "Auto" : "Manual",
+            autoMode ? K.acc : K.amber,
+          ),
+          const Spacer(),
+          // Online badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isFanOn ? K.green : K.sub,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Text("Online", style: ts(11, FontWeight.w600, Colors.white60)),
+            ]),
+          ),
+        ]),
+      );
+
+  Widget _stripChip(IconData icon, String label, String val, Color c) =>
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: c.withValues(alpha: 0.13),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Icon(icon, color: c, size: 16),
+        ),
+        const SizedBox(width: 9),
+        Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(label,
+                  style: ts(9, FontWeight.w500, Colors.white30, ls: 0.5)),
+              Text(val, style: ts(13, FontWeight.w700, c)),
+            ]),
+      ]);
+
+  // ── FAN VISUALIZATION — dark card with spinning icon ──────
   Widget _fanVisualization() => Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isFanOn
-                ? [Colors.grey.shade900, Colors.grey.shade800]
-                : [Colors.grey.shade300, Colors.grey.shade400],
-          ),
-          borderRadius: BorderRadius.circular(20),
+          color: K.dark,
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: isFanOn ? const Color(0xFF00E676) : Colors.grey.shade400,
+            color: isFanOn
+                ? K.green.withValues(alpha: 0.35)
+                : K.line.withValues(alpha: 0.12),
+            width: 1.5,
           ),
         ),
-        child: Column(
-          children: [
-            RotationTransition(
-              turns: _fanController,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.air,
-                  size: 70,
-                  color: isFanOn ? const Color(0xFF00E676) : Colors.white70,
+        child: Row(children: [
+          // Spinning fan icon
+          AnimatedBuilder(
+            animation: _fanController,
+            builder: (_, child) => Transform.rotate(
+              angle: _fanController.value * 2 * 3.14159,
+              child: child,
+            ),
+            child: Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: (isFanOn ? K.green : K.sub).withValues(alpha: 0.12),
+                border: Border.all(
+                  color: (isFanOn ? K.green : K.sub).withValues(alpha: 0.25),
+                  width: 1.5,
                 ),
               ),
+              child: Icon(
+                Icons.toys_rounded,
+                size: 48,
+                color: isFanOn ? K.green : K.sub,
+              ),
             ),
-            const SizedBox(height: 20),
-            Text(
-              isFanOn ? "FAN RUNNING" : "FAN STOPPED",
-              style: TextStyle(
-                  color: isFanOn ? const Color(0xFF00E676) : Colors.white70,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2),
+          ),
+          const SizedBox(width: 22),
+          // Text info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isFanOn ? "FAN RUNNING" : "FAN STOPPED",
+                  style: ts(10, FontWeight.w700, isFanOn ? K.green : K.sub,
+                      ls: 1.2),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  isFanOn ? "Active" : "Idle",
+                  style: ts(28, FontWeight.w800, isFanOn ? K.green : K.sub,
+                      ls: -0.8),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: (autoMode ? K.acc : K.amber).withValues(alpha: 0.13),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color:
+                          (autoMode ? K.acc : K.amber).withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    autoMode ? "Auto Mode" : "Manual Mode",
+                    style: ts(11, FontWeight.w700, autoMode ? K.acc : K.amber),
+                  ),
+                ),
+              ],
             ),
+          ),
+        ]),
+      );
+
+  // ── CO₂ MONITOR ───────────────────────────────────────────
+  Widget _co2Monitor() => Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: K.card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _co2Border, width: 1.5),
+        ),
+        child: Row(children: [
+          // Arc-like icon badge
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: _co2Soft,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _co2Border, width: 1),
+            ),
+            child: Icon(Icons.air_rounded, color: _co2Color, size: 26),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("CO₂ LEVEL",
+                    style: ts(9, FontWeight.w700, K.sub, ls: 1.2)),
+                const SizedBox(height: 4),
+                RichText(
+                  text: TextSpan(children: [
+                    TextSpan(
+                      text: co2.toStringAsFixed(0),
+                      style: ts(28, FontWeight.w800, _co2Color, ls: -0.8),
+                    ),
+                    TextSpan(
+                      text: "  ppm",
+                      style: ts(12, FontWeight.w500, K.sub),
+                    ),
+                  ]),
+                ),
+                const SizedBox(height: 6),
+                // Progress bar
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: (co2 / 1500).clamp(0.0, 1.0),
+                    minHeight: 5,
+                    backgroundColor: K.surface,
+                    valueColor: AlwaysStoppedAnimation(_co2Color),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text("Safe limit · 700 ppm",
+                    style: ts(10, FontWeight.w400, K.sub)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Status badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _co2Soft,
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(color: _co2Border, width: 1),
+            ),
+            child: Text(_co2Status, style: ts(12, FontWeight.w700, _co2Color)),
+          ),
+        ]),
+      );
+
+  // ── CONTROL PANEL ─────────────────────────────────────────
+  Widget _controlPanel() => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: K.card,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: K.line, width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text("Controls",
+                      style: ts(18, FontWeight.w700, K.ink, ls: -0.4)),
+                  Text("Fan & system settings",
+                      style: ts(12, FontWeight.w400, K.sub)),
+                ]),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: K.accSoft,
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(color: K.accBorder),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                          color: K.acc, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 5),
+                    Text("Active", style: ts(11, FontWeight.w600, K.acc)),
+                  ]),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+
+            // Auto mode toggle row
+            GestureDetector(
+              onTap: () => _toggleAutoMode(!autoMode),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: autoMode ? K.accSoft : K.surface,
+                  border: Border.all(
+                    color: autoMode ? K.accBorder : K.line,
+                    width: 1.5,
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Row(children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: autoMode ? K.acc : K.line,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.autorenew_rounded,
+                        color: autoMode ? Colors.white : K.sub, size: 20),
+                  ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Automatic Mode",
+                            style: ts(14, FontWeight.w600, K.ink)),
+                        Text("ESP handles all decisions",
+                            style: ts(11, FontWeight.w400, K.sub)),
+                      ],
+                    ),
+                  ),
+                  Transform.scale(
+                    scale: 0.85,
+                    child: Switch(
+                      value: autoMode,
+                      onChanged: _toggleAutoMode,
+                      activeColor: Colors.white,
+                      activeTrackColor: K.acc,
+                      inactiveThumbColor: Colors.white,
+                      inactiveTrackColor: K.sub.withValues(alpha: 0.3),
+                      trackOutlineColor:
+                          WidgetStateProperty.all(Colors.transparent),
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Divider label
+            Row(children: [
+              Text("MANUAL OVERRIDE",
+                  style: ts(9, FontWeight.w700, K.sub, ls: 1.2)),
+              const SizedBox(width: 10),
+              Expanded(child: Container(height: 1, color: K.line)),
+            ]),
+            const SizedBox(height: 14),
+
+            // Fan ON / OFF buttons
+            Row(children: [
+              Expanded(
+                  child: _fanBtn(
+                "Turn On",
+                Icons.power_settings_new_rounded,
+                true,
+                !autoMode && !isFanOn,
+                () => (autoMode || isFanOn) ? null : _toggleFan(),
+              )),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: _fanBtn(
+                "Turn Off",
+                Icons.power_off_rounded,
+                false,
+                !autoMode && isFanOn,
+                () => (autoMode || !isFanOn) ? null : _toggleFan(),
+              )),
+            ]),
+
+            // Locked warning
+            if (autoMode) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                decoration: BoxDecoration(
+                  color: K.amberSoft,
+                  border: Border.all(color: K.amberBorder, width: 1.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(children: [
+                  const Icon(Icons.lock_outline_rounded,
+                      color: K.amber, size: 16),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
+                      "Manual controls locked in auto mode",
+                      style: ts(12, FontWeight.w500, const Color(0xFF92400E)),
+                    ),
+                  ),
+                ]),
+              ),
+            ],
           ],
         ),
       );
 
-  Widget _co2Monitor() {
-    Color co2Color = co2 <= 700 ? Colors.green : Colors.red;
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: const [
-                  Icon(Icons.cloud_outlined, size: 28),
-                  SizedBox(width: 12),
-                  Text(
-                    "CO₂ Monitoring",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: co2Color,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  co2 <= 700 ? "SAFE" : "HIGH",
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                co2.toStringAsFixed(0),
-                style: TextStyle(
-                    color: co2Color,
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    height: 1),
-              ),
-              const SizedBox(width: 8),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  "ppm",
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 18),
-                ),
-              ),
-            ],
-          ),
-        ],
+  Widget _fanBtn(String label, IconData icon, bool isOn, bool enabled,
+      VoidCallback? onTap) {
+    final c = isOn ? K.green : K.red;
+    final bg = isOn ? K.greenSoft : K.redSoft;
+    final br = isOn ? K.greenBorder : K.redBorder;
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 15),
+        decoration: BoxDecoration(
+          color: enabled ? bg : K.surface,
+          border: Border.all(color: enabled ? br : K.line, width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(children: [
+          Icon(icon, color: enabled ? c : K.sub, size: 22),
+          const SizedBox(height: 7),
+          Text(label,
+              style: ts(12, FontWeight.w700, enabled ? c : K.sub, ls: 0.2)),
+        ]),
       ),
     );
   }
 
-  Widget _controlPanel() => Container(
+  // ── STATISTICS CARD ───────────────────────────────────────
+  Widget _statisticsCard() => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: K.dark,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade300),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              Icon(Icons.settings, color: Colors.grey.shade800),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: K.acc.withValues(alpha: 0.13),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child:
+                    const Icon(Icons.bar_chart_rounded, color: K.acc, size: 17),
+              ),
               const SizedBox(width: 10),
-              const Text(
-                "Control Panel",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
+              Text("System Statistics",
+                  style: ts(15, FontWeight.w700, Colors.white, ls: -0.3)),
             ]),
-            const SizedBox(height: 20),
-
-            // ---------------------- AUTO MODE SWITCH ---------------------
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: autoMode,
-              title: const Text("Automatic Mode"),
-              subtitle: const Text("ESP handles all decisions"),
-              onChanged: _toggleAutoMode,
-            ),
-
-            const SizedBox(height: 10),
-
-            // ---------------------- MANUAL BUTTONS ------------------------
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: autoMode || isFanOn ? null : _toggleFan,
-                    child: const Text("TURN ON"),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: autoMode || !isFanOn ? null : _toggleFan,
-                    child: const Text("TURN OFF"),
-                  ),
-                ),
-              ],
-            ),
-
-            if (autoMode)
-              const Padding(
-                padding: EdgeInsets.only(top: 10),
-                child: Text(
-                  "Manual controls disabled in auto mode",
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ),
+            const SizedBox(height: 14),
+            Container(
+                height: 1,
+                color: Colors.white.withValues(alpha: 0.07),
+                margin: const EdgeInsets.only(bottom: 14)),
+            _statRow(Icons.touch_app_rounded, "Total Operations",
+                "$totalOperations", K.acc),
+            _statRow(Icons.history_rounded, "Last Action", lastAction, K.amber),
+            _statRow(
+                Icons.sync_rounded, "Status", "Synced with Firebase", K.green),
           ],
         ),
       );
 
-  Widget _statisticsCard() => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "System Statistics",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildStatRow(
-                Icons.touch_app, "Total Operations", "$totalOperations"),
-            _buildStatRow(Icons.history, "Last Action", lastAction),
-            _buildStatRow(Icons.sync, "Status", "Synced with Firebase"),
-          ],
-        ),
-      );
-
-  Widget _buildStatRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
+  Widget _statRow(IconData icon, String label, String value, Color c) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 13),
+        child: Row(children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(10),
+              color: c.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(9),
             ),
-            child: Icon(icon, color: Colors.blue, size: 20),
+            child: Icon(icon, color: c, size: 15),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: const TextStyle(fontSize: 12, color: Colors.black45),
-                ),
+                Text(label,
+                    style: ts(9, FontWeight.w500, Colors.white30, ls: 0.3)),
                 const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600),
-                ),
+                Text(value,
+                    style: ts(13, FontWeight.w600, Colors.white70),
+                    overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ]),
+      );
 }

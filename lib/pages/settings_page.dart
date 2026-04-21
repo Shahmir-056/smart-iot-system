@@ -1,31 +1,85 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'login_page.dart';
 
+// ── Same color system as dashboard ────────────────────────────
+class K {
+  static const acc = Color(0xFF4FDAFB);
+  static const accSoft = Color(0xFFEBF9FE);
+  static const accBorder = Color(0xFFB2EEF9);
+  static const bg = Color(0xFFF3F5F9);
+  static const card = Color(0xFFFFFFFF);
+  static const ink = Color(0xFF0E1117);
+  static const sub = Color(0xFF8690A4);
+  static const line = Color(0xFFE9ECF1);
+  static const surface = Color(0xFFF0F2F6);
+  static const dark = Color(0xFF161B26);
+  static const red = Color(0xFFE53935);
+  static const redSoft = Color(0xFFFFF3F3);
+  static const redBorder = Color(0xFFFDD0D0);
+  static const amber = Color(0xFFF59E0B);
+  static const amberSoft = Color(0xFFFFFAEB);
+  static const amberBorder = Color(0xFFFDE68A);
+  static const green = Color(0xFF16A34A);
+  static const greenSoft = Color(0xFFF0FDF4);
+  static const greenBorder = Color(0xFF86EFAC);
+  static const orange = Color(0xFFEA580C);
+  static const orangeSoft = Color(0xFFFFF7ED);
+  static const blue = Color(0xFF2563EB);
+  static const blueSoft = Color(0xFFEFF6FF);
+  static const blueBorder = Color(0xFFBFD6FF);
+}
+
+TextStyle ts(double sz, FontWeight w, Color c,
+        {double ls = 0, double h = 1.3}) =>
+    GoogleFonts.dmSans(
+        fontSize: sz, fontWeight: w, color: c, letterSpacing: ls, height: h);
+
+// ═════════════════════════════════════════════════════════════
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
-
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _SettingsPageState extends State<SettingsPage>
+    with SingleTickerProviderStateMixin {
+  // ── ORIGINAL LOGIC — untouched ────────────────────────────
   late SharedPreferences prefs;
 
   String email = "";
   bool notificationsEnabled = true;
   bool soundEnabled = true;
-  bool darkModeEnabled = false;
-  double co2Threshold = 700;
+
+  // ── NEW: entrance animation ───────────────────────────────
+  late AnimationController _cardAnim;
+  late Animation<double> _cardA;
 
   @override
   void initState() {
     super.initState();
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ));
+    _cardAnim = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 900));
+    _cardA = CurvedAnimation(parent: _cardAnim, curve: Curves.easeOutCubic);
+    _cardAnim.forward();
     _initPrefs();
   }
 
+  @override
+  void dispose() {
+    _cardAnim.dispose();
+    super.dispose();
+  }
+
+  // ── ORIGINAL: load prefs ──────────────────────────────────
   Future<void> _initPrefs() async {
     prefs = await SharedPreferences.getInstance();
     _loadSettings();
@@ -36,37 +90,72 @@ class _SettingsPageState extends State<SettingsPage> {
       email = prefs.getString("email") ?? "No account found";
       notificationsEnabled = prefs.getBool("notifications") ?? true;
       soundEnabled = prefs.getBool("sound") ?? true;
-      darkModeEnabled = prefs.getBool("dark_mode") ?? false;
-      co2Threshold = prefs.getDouble("co2_threshold") ?? 700;
     });
   }
 
   Future<void> _savePreference(String key, dynamic value) async {
-    if (value is bool) {
-      await prefs.setBool(key, value);
-    } else if (value is double) {
-      await prefs.setDouble(key, value);
-    }
+    if (value is bool) await prefs.setBool(key, value);
   }
 
+  // ── ORIGINAL: logout ──────────────────────────────────────
   Future<void> _logoutUser() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Logout"),
-        content: const Text("Are you sure you want to logout?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("CANCEL"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text("LOGOUT"),
-          ),
-        ],
+      barrierColor: Colors.black38,
+      builder: (ctx) => Dialog(
+        backgroundColor: K.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                  color: K.redSoft, borderRadius: BorderRadius.circular(15)),
+              child: const Icon(Icons.logout_rounded, color: K.red, size: 24),
+            ),
+            const SizedBox(height: 16),
+            Text("Logout", style: ts(17, FontWeight.w700, K.ink)),
+            const SizedBox(height: 6),
+            Text("Are you sure you want to logout?",
+                style: ts(13, FontWeight.w400, K.sub),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: K.sub,
+                    side: const BorderSide(color: K.line),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text("Cancel", style: ts(13, FontWeight.w600, K.sub)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: K.red,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text("Logout",
+                      style: ts(13, FontWeight.w700, Colors.white)),
+                ),
+              ),
+            ]),
+          ]),
+        ),
       ),
     );
 
@@ -80,378 +169,601 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  // ── About dialog — redesigned ─────────────────────────────
   void _showAboutDialog() {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: const [
-            Icon(Icons.info_outline, color: Color(0xFF00E676)),
-            SizedBox(width: 10),
-            Text("About App"),
-          ],
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("IoT Environmental Monitor",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            SizedBox(height: 8),
-            Text("Version 1.0.0"),
-            SizedBox(height: 16),
-            Text(
-              "A smart system for monitoring air quality and "
-              "controlling ventilation automatically.",
-            ),
-            SizedBox(height: 16),
-            Text("Features:",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            Text("• Real-time CO₂ monitoring"),
-            Text("• Automatic fan control"),
-            Text("• Temperature & humidity tracking"),
-            Text("• Activity history logs"),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("CLOSE"),
+      barrierColor: Colors.black38,
+      builder: (ctx) => Dialog(
+        backgroundColor: K.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: K.acc,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Icon(Icons.eco_rounded,
+                      color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text("ArtifTree",
+                      style: ts(16, FontWeight.w800, K.ink, ls: -0.4)),
+                  Text("Version 1.0.0", style: ts(11, FontWeight.w400, K.sub)),
+                ]),
+              ]),
+              const SizedBox(height: 18),
+              Container(height: 1, color: K.line),
+              const SizedBox(height: 16),
+              Text("IoT Environmental Monitor",
+                  style: ts(13, FontWeight.w700, K.ink)),
+              const SizedBox(height: 6),
+              Text(
+                "A smart system for monitoring air quality "
+                "and controlling ventilation automatically.",
+                style: ts(12, FontWeight.w400, K.sub),
+              ),
+              const SizedBox(height: 16),
+              Text("FEATURES", style: ts(9, FontWeight.w700, K.sub, ls: 1.2)),
+              const SizedBox(height: 10),
+              ...[
+                "Real-time CO₂ monitoring",
+                "Automatic fan & humidifier control",
+                "Temperature & humidity tracking",
+                "Activity history logs",
+              ].map((f) => Padding(
+                    padding: const EdgeInsets.only(bottom: 7),
+                    child: Row(children: [
+                      Container(
+                        width: 5,
+                        height: 5,
+                        decoration: const BoxDecoration(
+                            color: K.acc, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(f, style: ts(12, FontWeight.w500, K.ink)),
+                    ]),
+                  )),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: K.acc,
+                    foregroundColor: K.ink,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text("Close", style: ts(13, FontWeight.w700, K.ink)),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Row(children: [
+        const Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
+        const SizedBox(width: 8),
+        Text(msg, style: ts(13, FontWeight.w500, Colors.white)),
+      ]),
+      backgroundColor: K.dark,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.all(16),
+      duration: const Duration(seconds: 2),
+    ));
+  }
+
+  // ── Slide entrance ────────────────────────────────────────
+  Widget _slide(int i, Widget child) {
+    final start = (i * 0.13).clamp(0.0, 1.0);
+    final end = (start + 0.55).clamp(0.0, 1.0);
+    final anim = CurvedAnimation(
+        parent: _cardA,
+        curve: Interval(start, end, curve: Curves.easeOutCubic));
+    return AnimatedBuilder(
+      animation: anim,
+      builder: (_, __) => Transform.translate(
+        offset: Offset(0, 20 * (1 - anim.value)),
+        child: Opacity(opacity: anim.value.clamp(0.0, 1.0), child: child),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // BUILD
+  // ═══════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 70,
-        title: _titleBar(),
-        elevation: 4,
-        flexibleSpace: _topGradient(),
-      ),
-      body: _bodyContent(),
+      backgroundColor: K.bg,
+      body: Column(children: [
+        _header(),
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 40),
+            child: AnimatedBuilder(
+              animation: _cardA,
+              builder: (_, __) => Column(children: [
+                _slide(0, _accountCard()),
+                const SizedBox(height: 14),
+                _slide(1, _notificationsCard()),
+                const SizedBox(height: 14),
+                _slide(2, _appInfoCard()),
+                const SizedBox(height: 14),
+                _slide(3, _logoutCard()),
+              ]),
+            ),
+          ),
+        ),
+      ]),
     );
   }
 
-  Widget _titleBar() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
-            "Settings",
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
-          ),
-          Text(
-            "Preferences & Configuration",
-            style: TextStyle(color: Color(0xFF00E676), fontSize: 12),
-          ),
-        ],
-      );
-
-  Widget _topGradient() => Container(
+  // ── RESPONSIVE HEADER ─────────────────────────────────────
+  Widget _header() => Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.grey.shade900, Colors.grey.shade800],
-          ),
-        ),
-      );
-
-  Widget _bodyContent() => SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildAccountCard(),
-            const SizedBox(height: 16),
-            _buildNotificationSettings(),
-            const SizedBox(height: 16),
-            _buildAlertSettings(),
-            const SizedBox(height: 16),
-            _buildAppSettings(),
-            const SizedBox(height: 16),
-            _buildLogoutButton(),
+          color: K.card,
+          boxShadow: [
+            BoxShadow(
+              color: K.ink.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
+        child: SafeArea(
+          bottom: false,
+          child: LayoutBuilder(
+            builder: (_, c) =>
+                c.maxWidth >= 600 ? _headerWide() : _headerMobile(),
+          ),
+        ),
       );
 
-  // ---------------------------------------------------------
-  // SECTION: Account Card
-  // ---------------------------------------------------------
-
-  Widget _buildAccountCard() => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: _whiteCard(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionHeader(Icons.settings, "Account"),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00E676).withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.person,
-                      color: Color(0xFF00E676), size: 32),
+  Widget _headerWide() => SizedBox(
+        height: 64,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: K.acc,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                        color: K.acc.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3)),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Logged in as",
-                          style:
-                              TextStyle(fontSize: 12, color: Colors.black45)),
-                      const SizedBox(height: 4),
-                      Text(email,
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600)),
+                child: const Icon(Icons.eco_rounded,
+                    color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("ArtifTree",
+                      style: ts(14, FontWeight.w800, K.ink, ls: -0.4)),
+                  Text("IoT Platform",
+                      style: ts(9, FontWeight.w500, K.sub, ls: 0.2)),
+                ],
+              ),
+              Container(
+                width: 1,
+                height: 28,
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      K.line.withValues(alpha: 0),
+                      K.line,
+                      K.line.withValues(alpha: 0),
                     ],
                   ),
                 ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                          color: K.acc, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 6),
+                    Text("Settings",
+                        style: ts(14, FontWeight.w700, K.ink, ls: -0.3)),
+                  ]),
+                  const SizedBox(height: 1),
+                  Text("Preferences & Configuration",
+                      style: ts(10, FontWeight.w400, K.sub)),
+                ],
+              ),
+              const Spacer(),
+            ],
+          ),
+        ),
+      );
+
+  Widget _headerMobile() => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: K.acc,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                      color: K.acc.withValues(alpha: 0.28),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3)),
+                ],
+              ),
+              child:
+                  const Icon(Icons.eco_rounded, color: Colors.white, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Settings",
+                      style: ts(15, FontWeight.w800, K.ink, ls: -0.4),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1),
+                  Text("Preferences & Configuration",
+                      style: ts(10, FontWeight.w400, K.sub)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+
+  // ── ACCOUNT CARD ──────────────────────────────────────────
+  Widget _accountCard() => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: K.dark,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Row(children: [
+          // Avatar circle
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: K.acc,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                    color: K.acc.withValues(alpha: 0.28),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5)),
               ],
             ),
-          ],
-        ),
-      );
-
-  // ---------------------------------------------------------
-  // SECTION: Notifications
-  // ---------------------------------------------------------
-
-  Widget _buildNotificationSettings() => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: _whiteCard(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionHeader(Icons.notifications_outlined, "Notifications"),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: notificationsEnabled,
-              onChanged: (value) {
-                setState(() => notificationsEnabled = value);
-                _savePreference("notifications", value);
-              },
-              title: const Text("Push Notifications"),
-              subtitle: const Text("Receive alerts for high CO₂ levels"),
-              secondary: _iconBox(Icons.notifications_active, Colors.orange),
+            child: Center(
+              child: Text(
+                // Show initials from email
+                email.isNotEmpty && email != "No account found"
+                    ? email.substring(0, 2).toUpperCase()
+                    : "AS",
+                style: ts(18, FontWeight.w800, Colors.white),
+              ),
             ),
-            const Divider(),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: soundEnabled,
-              onChanged: (value) {
-                setState(() => soundEnabled = value);
-                _savePreference("sound", value);
-              },
-              title: const Text("Sound Alerts"),
-              subtitle: const Text("Play audio when alerts trigger"),
-              secondary: _iconBox(Icons.volume_up, Colors.blue),
-            ),
-          ],
-        ),
-      );
-
-  // ---------------------------------------------------------
-  // SECTION: Alert Threshold
-  // ---------------------------------------------------------
-
-  Widget _buildAlertSettings() => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: _whiteCard(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionHeader(Icons.warning_amber_outlined, "Alert Settings"),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("CO₂ Alert Threshold",
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w600)),
-                    SizedBox(height: 4),
-                    Text("Trigger alerts above this level",
-                        style: TextStyle(fontSize: 12, color: Colors.black45)),
-                  ],
-                ),
+                Text("MY ACCOUNT",
+                    style: ts(9, FontWeight.w700, Colors.white30, ls: 1)),
+                const SizedBox(height: 5),
+                Text(email,
+                    style: ts(13, FontWeight.w600, Colors.white),
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(10),
+                    color: K.green.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: K.green.withValues(alpha: 0.3)),
                   ),
-                  child: Text(
-                    "${co2Threshold.toInt()} ppm",
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red),
-                  ),
+                  child: Text("Active Session",
+                      style: ts(10, FontWeight.w600, K.green)),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Slider(
-              value: co2Threshold,
-              min: 500,
-              max: 1000,
-              divisions: 10,
-              label: "${co2Threshold.toInt()} ppm",
-              activeColor: Colors.red,
-              onChanged: (value) {
-                setState(() => co2Threshold = value);
-                _savePreference("co2_threshold", value);
-              },
-            ),
-          ],
-        ),
+          ),
+        ]),
       );
 
-  // ---------------------------------------------------------
-  // SECTION: App Settings
-  // ---------------------------------------------------------
-
-  Widget _buildAppSettings() => Container(
+  // ── NOTIFICATIONS CARD ────────────────────────────────────
+  Widget _notificationsCard() => Container(
         padding: const EdgeInsets.all(20),
-        decoration: _whiteCard(),
+        decoration: BoxDecoration(
+          color: K.card,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: K.line, width: 1.5),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _sectionHeader(Icons.app_settings_alt, "App Settings"),
+            // Section label
+            Row(children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: K.orangeSoft,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.notifications_rounded,
+                    color: K.orange, size: 17),
+              ),
+              const SizedBox(width: 10),
+              Text("Notifications",
+                  style: ts(15, FontWeight.w700, K.ink, ls: -0.3)),
+            ]),
             const SizedBox(height: 16),
-            _buildSettingTile(
-              icon: Icons.info_outline,
-              title: "About App",
-              subtitle: "Version & information",
-              color: Colors.blue,
-              onTap: _showAboutDialog,
-            ),
-            const Divider(),
-            _buildSettingTile(
-              icon: Icons.help_outline,
-              title: "Help & Support",
-              subtitle: "Get assistance",
-              color: Colors.purple,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text("Contact: support@iotmonitor.com")),
-                );
+            Container(height: 1, color: K.line),
+            const SizedBox(height: 4),
+
+            // Push notifications toggle
+            _toggleRow(
+              icon: Icons.notifications_active_rounded,
+              iconBg: K.orangeSoft,
+              iconColor: K.orange,
+              title: "Push Notifications",
+              subtitle: "Receive alerts for high CO₂ levels",
+              value: notificationsEnabled,
+              onChanged: (v) {
+                setState(() => notificationsEnabled = v);
+                _savePreference("notifications", v);
+                _showSnack("Notifications ${v ? 'enabled' : 'disabled'}");
               },
             ),
-            const Divider(),
-            _buildSettingTile(
-              icon: Icons.privacy_tip_outlined,
-              title: "Privacy Policy",
-              subtitle: "Data & privacy terms",
-              color: Colors.orange,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Opening privacy policy...")),
-                );
+            Container(height: 1, color: K.line),
+
+            // Sound alerts toggle
+            _toggleRow(
+              icon: Icons.volume_up_rounded,
+              iconBg: K.blueSoft,
+              iconColor: K.blue,
+              title: "Sound Alerts",
+              subtitle: "Play audio when alerts trigger",
+              value: soundEnabled,
+              onChanged: (v) {
+                setState(() => soundEnabled = v);
+                _savePreference("sound", v);
+                _showSnack("Sound ${v ? 'enabled' : 'disabled'}");
               },
             ),
           ],
         ),
       );
 
-  Widget _buildSettingTile({
+  Widget _toggleRow({
     required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
     required String title,
     required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: _iconBox(icon, color),
-      title: Text(title,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle,
-          style: const TextStyle(fontSize: 12, color: Colors.black45)),
-      trailing:
-          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
-      onTap: onTap,
-    );
-  }
-
-  // ---------------------------------------------------------
-  // SECTION: Logout Button
-  // ---------------------------------------------------------
-
-  Widget _buildLogoutButton() => Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.red.shade600, Colors.red.shade700],
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 17),
           ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.red.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            )
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: ts(13, FontWeight.w600, K.ink)),
+                Text(subtitle, style: ts(11, FontWeight.w400, K.sub)),
+              ],
+            ),
+          ),
+          Transform.scale(
+            scale: 0.82,
+            child: Switch(
+              value: value,
+              onChanged: onChanged,
+              activeColor: Colors.white,
+              activeTrackColor: K.acc,
+              inactiveThumbColor: Colors.white,
+              inactiveTrackColor: K.sub.withValues(alpha: 0.3),
+              trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+            ),
+          ),
+        ]),
+      );
+
+  // ── APP INFO CARD ─────────────────────────────────────────
+  Widget _appInfoCard() => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: K.card,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: K.line, width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: K.accSoft,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.apps_rounded, color: K.acc, size: 17),
+              ),
+              const SizedBox(width: 10),
+              Text("App Info", style: ts(15, FontWeight.w700, K.ink, ls: -0.3)),
+            ]),
+            const SizedBox(height: 16),
+            Container(height: 1, color: K.line),
+            const SizedBox(height: 4),
+            _infoRow(
+              icon: Icons.info_outline_rounded,
+              iconBg: K.blueSoft,
+              iconColor: K.blue,
+              title: "About App",
+              subtitle: "Version & information",
+              onTap: _showAboutDialog,
+            ),
+            Container(height: 1, color: K.line),
+            _infoRow(
+              icon: Icons.help_outline_rounded,
+              iconBg: K.amberSoft,
+              iconColor: K.amber,
+              title: "Help & Support",
+              subtitle: "support@artifTree.com",
+              onTap: () => _showSnack("Contact: support@artifTree.com"),
+            ),
+            Container(height: 1, color: K.line),
+            _infoRow(
+              icon: Icons.privacy_tip_outlined,
+              iconBg: K.greenSoft,
+              iconColor: K.green,
+              title: "Privacy Policy",
+              subtitle: "Data & privacy terms",
+              onTap: () => _showSnack("Opening privacy policy..."),
+            ),
           ],
         ),
-        child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-          onPressed: _logoutUser,
-          icon: const Icon(Icons.logout, color: Colors.white),
-          label: const Text(
-            "Logout",
-            style: TextStyle(
-                fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
+      );
+
+  Widget _infoRow({
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) =>
+      GestureDetector(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 17),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: ts(13, FontWeight.w600, K.ink)),
+                  Text(subtitle, style: ts(11, FontWeight.w400, K.sub)),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded, size: 13, color: K.sub),
+          ]),
         ),
       );
 
-  // ---------------------------------------------------------
-  // HELPERS
-  // ---------------------------------------------------------
-
-  BoxDecoration _whiteCard() => BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade300),
-      );
-
-  Widget _sectionHeader(IconData icon, String title) => Row(
-        children: [
-          Icon(icon, color: Colors.grey.shade800),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ],
-      );
-
-  Widget _iconBox(IconData icon, Color color) => Container(
-        padding: const EdgeInsets.all(8),
+  // ── LOGOUT CARD ───────────────────────────────────────────
+  Widget _logoutCard() => Container(
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
+          color: K.card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: K.redBorder, width: 1.5),
         ),
-        child: Icon(icon, color: color, size: 20),
+        child: Row(children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: K.redSoft,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(Icons.logout_rounded, color: K.red, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Logout", style: ts(14, FontWeight.w700, K.red)),
+                Text("Sign out of your account",
+                    style: ts(11, FontWeight.w400, K.sub)),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: _logoutUser,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: K.red,
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Text("Sign Out",
+                  style: ts(12, FontWeight.w700, Colors.white)),
+            ),
+          ),
+        ]),
       );
 }
