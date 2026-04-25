@@ -1,12 +1,9 @@
-// ignore_for_file: deprecated_member_use
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// ── Same color system as dashboard ────────────────────────────
 class K {
   static const acc = Color(0xFF4FDAFB);
   static const accSoft = Color(0xFFEBF9FE);
@@ -39,7 +36,6 @@ TextStyle ts(double sz, FontWeight w, Color c,
     GoogleFonts.dmSans(
         fontSize: sz, fontWeight: w, color: c, letterSpacing: ls, height: h);
 
-// ═════════════════════════════════════════════════════════════
 class FanPage extends StatefulWidget {
   const FanPage({super.key});
   @override
@@ -47,22 +43,16 @@ class FanPage extends StatefulWidget {
 }
 
 class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
-  // ── ORIGINAL LOGIC — untouched ────────────────────────────
   final DatabaseReference dbRef = FirebaseDatabase.instance.ref("iot_data");
-
   bool isFanOn = false;
   bool autoMode = false;
   double co2 = 0;
   int totalOperations = 0;
   String lastAction = "System Ready";
-
   late AnimationController _fanController;
-
-  // ── NEW: card entrance + live pulse ──────────────────────
   late AnimationController _cardAnim;
   late AnimationController _liveAnim;
   late Animation<double> _cardA;
-
   @override
   void initState() {
     super.initState();
@@ -70,22 +60,16 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
     ));
-
-    // Original fan rotation controller
     _fanController =
         AnimationController(duration: const Duration(seconds: 1), vsync: this);
-
-    // Entrance animation
     _cardAnim = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 900));
     _cardA = CurvedAnimation(parent: _cardAnim, curve: Curves.easeOutCubic);
     _cardAnim.forward();
-
     // Live dot pulse
     _liveAnim = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1300))
       ..repeat(reverse: true);
-
     dbRef.onValue.listen(_updateRealtimeData);
   }
 
@@ -97,7 +81,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  // ── ORIGINAL: realtime listener ───────────────────────────
   void _updateRealtimeData(DatabaseEvent event) {
     if (!mounted) return;
     if (event.snapshot.value == null) return;
@@ -110,7 +93,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
     isFanOn ? _fanController.repeat() : _fanController.stop();
   }
 
-  // ── ORIGINAL: manual fan toggle ───────────────────────────
   Future<void> _toggleFan() async {
     if (autoMode) {
       _showSnack("Disable auto mode first", isWarn: true);
@@ -127,7 +109,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
     _showSnack("Fan turned $newStatus");
   }
 
-  // ── ORIGINAL: auto mode toggle ────────────────────────────
   Future<void> _toggleAutoMode(bool value) async {
     await dbRef.update({"auto_mode": value ? "ON" : "OFF"});
     setState(() {
@@ -138,7 +119,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
     _showSnack("Auto mode ${value ? 'enabled' : 'disabled'}");
   }
 
-  // ── Snack — matches dashboard style ──────────────────────
   void _showSnack(String msg, {bool isWarn = false}) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -159,7 +139,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
     ));
   }
 
-  // ── CO₂ helpers ───────────────────────────────────────────
   Color get _co2Color {
     if (co2 <= 400) return K.green;
     if (co2 <= 700) return K.acc;
@@ -188,9 +167,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
     return K.redBorder;
   }
 
-  // ═══════════════════════════════════════════════════════
-  // BUILD
-  // ═══════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -221,7 +197,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
     );
   }
 
-  // ── Staggered entrance — same as dashboard ────────────────
   Widget _slide(int i, Widget child) {
     final start = (i * 0.13).clamp(0.0, 1.0);
     final end = (start + 0.55).clamp(0.0, 1.0);
@@ -237,7 +212,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
     );
   }
 
-  // ── RESPONSIVE HEADER ─────────────────────────────────────
   Widget _header() => Container(
         decoration: BoxDecoration(
           color: K.card,
@@ -256,7 +230,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
           ),
         ),
       );
-
   Widget _headerWide() => SizedBox(
         height: 64,
         child: Padding(
@@ -264,7 +237,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Brand
               Container(
                 width: 36,
                 height: 36,
@@ -328,18 +300,16 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
                         style: ts(14, FontWeight.w700, K.ink, ls: -0.3)),
                   ]),
                   const SizedBox(height: 1),
-                  Text("Smart Ventilation · Sector A",
+                  Text("Smart Ventilation ",
                       style: ts(10, FontWeight.w400, K.sub)),
                 ],
               ),
               const Spacer(),
-              // Live pill
               _livePill(),
             ],
           ),
         ),
       );
-
   Widget _headerMobile() => Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
         child: Row(
@@ -382,7 +352,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
           ],
         ),
       );
-
   Widget _livePill() => AnimatedBuilder(
         animation: _liveAnim,
         builder: (_, __) => Container(
@@ -406,8 +375,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
           ]),
         ),
       );
-
-  // ── STATUS STRIP — dark, mirrors dashboard ────────────────
   Widget _statusStrip() => Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
@@ -457,7 +424,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
           ),
         ]),
       );
-
   Widget _stripChip(IconData icon, String label, String val, Color c) =>
       Row(mainAxisSize: MainAxisSize.min, children: [
         Container(
@@ -479,8 +445,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
               Text(val, style: ts(13, FontWeight.w700, c)),
             ]),
       ]);
-
-  // ── FAN VISUALIZATION — dark card with spinning icon ──────
   Widget _fanVisualization() => Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
@@ -513,14 +477,13 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
                 ),
               ),
               child: Icon(
-                Icons.toys_rounded,
+                Icons.wind_power,
                 size: 48,
                 color: isFanOn ? K.green : K.sub,
               ),
             ),
           ),
           const SizedBox(width: 22),
-          // Text info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -559,8 +522,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
           ),
         ]),
       );
-
-  // ── CO₂ MONITOR ───────────────────────────────────────────
   Widget _co2Monitor() => Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
@@ -630,8 +591,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
           ),
         ]),
       );
-
-  // ── CONTROL PANEL ─────────────────────────────────────────
   Widget _controlPanel() => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -674,8 +633,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
               ],
             ),
             const SizedBox(height: 18),
-
-            // Auto mode toggle row
             GestureDetector(
               onTap: () => _toggleAutoMode(!autoMode),
               child: AnimatedContainer(
@@ -730,7 +687,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
               ),
             ),
             const SizedBox(height: 16),
-
             // Divider label
             Row(children: [
               Text("MANUAL OVERRIDE",
@@ -739,8 +695,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
               Expanded(child: Container(height: 1, color: K.line)),
             ]),
             const SizedBox(height: 14),
-
-            // Fan ON / OFF buttons
             Row(children: [
               Expanded(
                   child: _fanBtn(
@@ -760,7 +714,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
                 () => (autoMode || !isFanOn) ? null : _toggleFan(),
               )),
             ]),
-
             // Locked warning
             if (autoMode) ...[
               const SizedBox(height: 14),
@@ -788,7 +741,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
           ],
         ),
       );
-
   Widget _fanBtn(String label, IconData icon, bool isOn, bool enabled,
       VoidCallback? onTap) {
     final c = isOn ? K.green : K.red;
@@ -814,7 +766,6 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
     );
   }
 
-  // ── STATISTICS CARD ───────────────────────────────────────
   Widget _statisticsCard() => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(

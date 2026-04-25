@@ -804,7 +804,6 @@ class _DashboardPageState extends State<DashboardPage>
               )),
         ]),
       );
-
   // ── CO2 Hero Card ─────────────────────────────────────────
   Widget _co2Hero() => AnimatedBuilder(
         animation: _pulseA,
@@ -923,7 +922,6 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ]);
       });
-
   // ── Sensor Grid — each card has its own personality ───────
   Widget _sensorGrid() => Column(children: [
         Row(children: [
@@ -934,7 +932,6 @@ class _DashboardPageState extends State<DashboardPage>
         const SizedBox(height: 12),
         _smogCard(),
       ]);
-
   // Temperature — warm gradient left border
   Widget _tempCard() => Container(
         padding: const EdgeInsets.all(16),
@@ -998,7 +995,6 @@ class _DashboardPageState extends State<DashboardPage>
                   )),
             ]),
       );
-
   // Humidity — blue toned, droplet feel
   Widget _humCard() => Container(
         padding: const EdgeInsets.all(16),
@@ -1057,7 +1053,6 @@ class _DashboardPageState extends State<DashboardPage>
                   )),
             ]),
       );
-
   // Smog — full width, darker surface, more detail
   Widget _smogCard() {
     final c = _smogC;
@@ -1099,7 +1094,7 @@ class _DashboardPageState extends State<DashboardPage>
                 height: 7,
                 decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
             const SizedBox(width: 6),
-            Text("SMOG  /  AIR QUALITY",
+            Text("SMOKE  /  AIR QUALITY",
                 style: ts(10, FontWeight.w700, Colors.white38, ls: 1.1)),
           ]),
           const SizedBox(height: 6),
@@ -1139,8 +1134,7 @@ class _DashboardPageState extends State<DashboardPage>
           Text(label, style: ts(9, FontWeight.w500, Colors.white38)),
         ]),
       );
-
-  // ── Status Bar ────────────────────────────────────────────
+  // Status Bar
   Widget _statusBar() => Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
@@ -1196,8 +1190,7 @@ class _DashboardPageState extends State<DashboardPage>
               Text(val, style: ts(13, FontWeight.w700, c)),
             ]),
       ]);
-
-  // ── Controls ──────────────────────────────────────────────
+  //Controls
   Widget _controls() => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -1229,7 +1222,6 @@ class _DashboardPageState extends State<DashboardPage>
             ),
           ]),
           const SizedBox(height: 18),
-
           // Auto mode row
           GestureDetector(
             onTap: () => _toggleAuto(auto == "ON" ? "OFF" : "ON"),
@@ -1279,7 +1271,6 @@ class _DashboardPageState extends State<DashboardPage>
             ),
           ),
           const SizedBox(height: 16),
-
           Row(children: [
             Text("MANUAL OVERRIDE",
                 style: ts(9, FontWeight.w700, K.sub, ls: 1.2)),
@@ -1287,7 +1278,6 @@ class _DashboardPageState extends State<DashboardPage>
             Expanded(child: Container(height: 1, color: K.line)),
           ]),
           const SizedBox(height: 14),
-
           Row(children: [
             Expanded(
                 child: _fanBtn(
@@ -1301,7 +1291,6 @@ class _DashboardPageState extends State<DashboardPage>
                 child: _fanBtn("Turn Off", Icons.power_off_rounded, false,
                     auto == "OFF" && fan == "ON", () => _toggleFan("OFF"))),
           ]),
-
           if (auto == "ON") ...[
             const SizedBox(height: 14),
             Container(
@@ -1323,7 +1312,6 @@ class _DashboardPageState extends State<DashboardPage>
           ],
         ]),
       );
-
   Widget _fanBtn(String label, IconData icon, bool isOn, bool enabled,
       VoidCallback onTap) {
     final c = isOn ? K.green : K.red;
@@ -1350,13 +1338,12 @@ class _DashboardPageState extends State<DashboardPage>
   }
 }
 
-// ── Arc Painter ───────────────────────────────────────────────
+//Arc Painter
 class _Arc extends CustomPainter {
   final double progress;
   final Color color, track;
   const _Arc(
       {required this.progress, required this.color, required this.track});
-
   @override
   void paint(Canvas canvas, Size s) {
     final c = Offset(s.width / 2, s.height / 2);

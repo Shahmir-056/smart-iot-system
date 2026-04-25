@@ -98,7 +98,7 @@ class _MainNavigationState extends State<MainNavigation> {
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Dashboard"),
           BottomNavigationBarItem(
               icon: Icon(Icons.show_chart), label: "Graphs"),
-          BottomNavigationBarItem(icon: Icon(Icons.toys), label: "Fan"),
+          BottomNavigationBarItem(icon: Icon(Icons.wind_power), label: "Fan"),
           BottomNavigationBarItem(
               icon: Icon(Icons.water_drop), label: "Humidifier"),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),

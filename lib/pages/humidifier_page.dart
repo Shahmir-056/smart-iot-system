@@ -1,11 +1,8 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// ── Same color system as dashboard ────────────────────────────
 class K {
   static const acc = Color(0xFF4FDAFB);
   static const accSoft = Color(0xFFEBF9FE);
@@ -38,7 +35,6 @@ TextStyle ts(double sz, FontWeight w, Color c,
     GoogleFonts.dmSans(
         fontSize: sz, fontWeight: w, color: c, letterSpacing: ls, height: h);
 
-// ═════════════════════════════════════════════════════════════
 class HumidifierPage extends StatefulWidget {
   const HumidifierPage({super.key});
   @override
@@ -47,22 +43,16 @@ class HumidifierPage extends StatefulWidget {
 
 class _HumidifierPageState extends State<HumidifierPage>
     with TickerProviderStateMixin {
-  // ── ORIGINAL LOGIC — untouched ────────────────────────────
   final DatabaseReference dbRef = FirebaseDatabase.instance.ref("iot_data");
-
   bool isHumidifierOn = false;
   bool autoMode = false;
   double humidity = 0;
   int totalOperations = 0;
   String lastAction = "System Ready";
-
   late AnimationController _animationController;
-
-  // ── NEW: entrance + live pulse ────────────────────────────
   late AnimationController _cardAnim;
   late AnimationController _liveAnim;
   late Animation<double> _cardA;
-
   @override
   void initState() {
     super.initState();
@@ -70,22 +60,16 @@ class _HumidifierPageState extends State<HumidifierPage>
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
     ));
-
-    // Original animation controller
     _animationController =
         AnimationController(duration: const Duration(seconds: 2), vsync: this);
-
     // Entrance animation
     _cardAnim = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 900));
     _cardA = CurvedAnimation(parent: _cardAnim, curve: Curves.easeOutCubic);
     _cardAnim.forward();
-
-    // Live dot pulse
     _liveAnim = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1300))
       ..repeat(reverse: true);
-
     dbRef.onValue.listen(_updateData);
   }
 
@@ -97,7 +81,6 @@ class _HumidifierPageState extends State<HumidifierPage>
     super.dispose();
   }
 
-  // ── ORIGINAL: realtime listener ───────────────────────────
   void _updateData(DatabaseEvent event) {
     if (!mounted) return;
     if (event.snapshot.value == null) return;
@@ -112,7 +95,6 @@ class _HumidifierPageState extends State<HumidifierPage>
         : _animationController.stop();
   }
 
-  // ── ORIGINAL: manual humidifier toggle ───────────────────
   Future<void> _toggleHumidifier() async {
     if (autoMode) {
       _showSnack("Disable auto mode first", isWarn: true);
@@ -127,7 +109,6 @@ class _HumidifierPageState extends State<HumidifierPage>
     _showSnack("Humidifier $newStatus");
   }
 
-  // ── ORIGINAL: auto mode toggle ────────────────────────────
   Future<void> _toggleAutoMode(bool value) async {
     await dbRef.update({"auto_mode": value ? "ON" : "OFF"});
     setState(() {
@@ -138,7 +119,6 @@ class _HumidifierPageState extends State<HumidifierPage>
     _showSnack("Auto mode ${value ? 'enabled' : 'disabled'}");
   }
 
-  // ── Snack — matches dashboard style ──────────────────────
   void _showSnack(String msg, {bool isWarn = false}) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -159,7 +139,6 @@ class _HumidifierPageState extends State<HumidifierPage>
     ));
   }
 
-  // ── Humidity helpers ──────────────────────────────────────
   Color get _humColor {
     if (humidity < 30) return K.amber;
     if (humidity <= 60) return K.blue;
@@ -188,9 +167,6 @@ class _HumidifierPageState extends State<HumidifierPage>
     return K.redBorder;
   }
 
-  // ═══════════════════════════════════════════════════════
-  // BUILD
-  // ═══════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -221,7 +197,7 @@ class _HumidifierPageState extends State<HumidifierPage>
     );
   }
 
-  // ── Staggered entrance ────────────────────────────────────
+  //animation for all slides of page
   Widget _slide(int i, Widget child) {
     final start = (i * 0.13).clamp(0.0, 1.0);
     final end = (start + 0.55).clamp(0.0, 1.0);
@@ -237,7 +213,6 @@ class _HumidifierPageState extends State<HumidifierPage>
     );
   }
 
-  // ── RESPONSIVE HEADER ─────────────────────────────────────
   Widget _header() => Container(
         decoration: BoxDecoration(
           color: K.card,
@@ -256,7 +231,6 @@ class _HumidifierPageState extends State<HumidifierPage>
           ),
         ),
       );
-
   Widget _headerWide() => SizedBox(
         height: 64,
         child: Padding(
@@ -292,7 +266,6 @@ class _HumidifierPageState extends State<HumidifierPage>
                       style: ts(9, FontWeight.w500, K.sub, ls: 0.2)),
                 ],
               ),
-              // Gradient divider
               Container(
                 width: 1,
                 height: 28,
@@ -309,7 +282,6 @@ class _HumidifierPageState extends State<HumidifierPage>
                   ),
                 ),
               ),
-              // Page title
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -338,7 +310,6 @@ class _HumidifierPageState extends State<HumidifierPage>
           ),
         ),
       );
-
   Widget _headerMobile() => Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
         child: Row(
@@ -380,7 +351,6 @@ class _HumidifierPageState extends State<HumidifierPage>
           ],
         ),
       );
-
   Widget _livePill() => AnimatedBuilder(
         animation: _liveAnim,
         builder: (_, __) => Container(
@@ -404,8 +374,7 @@ class _HumidifierPageState extends State<HumidifierPage>
           ]),
         ),
       );
-
-  // ── STATUS STRIP ──────────────────────────────────────────
+  //STATUS STRIP
   Widget _statusStrip() => Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
@@ -454,7 +423,6 @@ class _HumidifierPageState extends State<HumidifierPage>
           ),
         ]),
       );
-
   Widget _stripChip(IconData icon, String label, String val, Color c) =>
       Row(mainAxisSize: MainAxisSize.min, children: [
         Container(
@@ -476,8 +444,6 @@ class _HumidifierPageState extends State<HumidifierPage>
           ],
         ),
       ]);
-
-  // ── HUMIDIFIER VISUALIZATION ──────────────────────────────
   Widget _humidifierVisualization() => Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
@@ -491,7 +457,6 @@ class _HumidifierPageState extends State<HumidifierPage>
           ),
         ),
         child: Row(children: [
-          // Pulsing droplet animation
           AnimatedBuilder(
             animation: _animationController,
             builder: (_, child) => Transform.scale(
@@ -519,7 +484,6 @@ class _HumidifierPageState extends State<HumidifierPage>
             ),
           ),
           const SizedBox(width: 22),
-          // Text info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,8 +524,6 @@ class _HumidifierPageState extends State<HumidifierPage>
           ),
         ]),
       );
-
-  // ── HUMIDITY MONITOR ──────────────────────────────────────
   Widget _humidityMonitor() => Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
@@ -628,8 +590,6 @@ class _HumidifierPageState extends State<HumidifierPage>
           ),
         ]),
       );
-
-  // ── CONTROL PANEL ─────────────────────────────────────────
   Widget _controlPanel() => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -671,8 +631,6 @@ class _HumidifierPageState extends State<HumidifierPage>
               ],
             ),
             const SizedBox(height: 18),
-
-            // Auto mode row
             GestureDetector(
               onTap: () => _toggleAutoMode(!autoMode),
               child: AnimatedContainer(
@@ -727,8 +685,6 @@ class _HumidifierPageState extends State<HumidifierPage>
               ),
             ),
             const SizedBox(height: 16),
-
-            // Divider label
             Row(children: [
               Text("MANUAL OVERRIDE",
                   style: ts(9, FontWeight.w700, K.sub, ls: 1.2)),
@@ -736,8 +692,6 @@ class _HumidifierPageState extends State<HumidifierPage>
               Expanded(child: Container(height: 1, color: K.line)),
             ]),
             const SizedBox(height: 14),
-
-            // ON / OFF buttons
             Row(children: [
               Expanded(
                   child: _humBtn(
@@ -758,7 +712,6 @@ class _HumidifierPageState extends State<HumidifierPage>
                     (autoMode || !isHumidifierOn) ? null : _toggleHumidifier(),
               )),
             ]),
-
             // Locked warning
             if (autoMode) ...[
               const SizedBox(height: 14),
@@ -786,7 +739,6 @@ class _HumidifierPageState extends State<HumidifierPage>
           ],
         ),
       );
-
   Widget _humBtn(String label, IconData icon, bool isOn, bool enabled,
       VoidCallback? onTap) {
     final c = isOn ? K.blue : K.red;
@@ -812,7 +764,6 @@ class _HumidifierPageState extends State<HumidifierPage>
     );
   }
 
-  // ── STATISTICS CARD ───────────────────────────────────────
   Widget _statisticsCard() => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -851,7 +802,6 @@ class _HumidifierPageState extends State<HumidifierPage>
           ],
         ),
       );
-
   Widget _statRow(IconData icon, String label, String value, Color c) =>
       Padding(
         padding: const EdgeInsets.only(bottom: 13),
