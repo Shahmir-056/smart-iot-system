@@ -101,12 +101,12 @@ class _HumidifierPageState extends State<HumidifierPage>
       return;
     }
     final newStatus = isHumidifierOn ? "OFF" : "ON";
-    await dbRef.update({"humidifier_status": newStatus});
+    await dbRef.update({"humidifier_command": newStatus});
     setState(() {
       totalOperations++;
-      lastAction = "Manual $newStatus";
+      lastAction = "Manual command: $newStatus";
     });
-    _showSnack("Humidifier $newStatus");
+    _showSnack("Humidifier command sent: $newStatus");
   }
 
   Future<void> _toggleAutoMode(bool value) async {

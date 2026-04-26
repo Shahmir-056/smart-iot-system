@@ -1,11 +1,8 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// ── Same color system as dashboard ────────────────────────────
 class K {
   static const acc = Color(0xFF4FDAFB);
   static const accSoft = Color(0xFFEBF9FE);
@@ -38,7 +35,6 @@ TextStyle ts(double sz, FontWeight w, Color c,
     GoogleFonts.dmSans(
         fontSize: sz, fontWeight: w, color: c, letterSpacing: ls, height: h);
 
-// ── Simple data model for one history record ──────────────────
 class HistoryRecord {
   final String key;
   final double temperature;
@@ -46,7 +42,6 @@ class HistoryRecord {
   final double co2;
   final String fanStatus;
   final String timestamp;
-
   HistoryRecord({
     required this.key,
     required this.temperature,
@@ -55,8 +50,6 @@ class HistoryRecord {
     required this.fanStatus,
     required this.timestamp,
   });
-
-  // Build from Firebase snapshot
   factory HistoryRecord.fromMap(String key, Map data) {
     return HistoryRecord(
       key: key,
@@ -69,7 +62,6 @@ class HistoryRecord {
   }
 }
 
-// ═════════════════════════════════════════════════════════════
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
   @override
@@ -77,13 +69,10 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  // ── Firebase ref — same node as graph page ─────────────────
   final DatabaseReference dbRef =
       FirebaseDatabase.instance.ref().child("iot_data_history");
-
   List<HistoryRecord> records = [];
   bool loading = true;
-
   @override
   void initState() {
     super.initState();
@@ -94,32 +83,24 @@ class _HistoryPageState extends State<HistoryPage> {
     _loadHistory();
   }
 
-  // ── Load all history from Firebase ────────────────────────
   Future<void> _loadHistory() async {
     setState(() => loading = true);
-
     final snapshot = await dbRef.get();
-
     if (!snapshot.exists) {
       setState(() => loading = false);
       return;
     }
-
     final List<HistoryRecord> loaded = [];
-
     for (var item in snapshot.children) {
       final data = item.value as Map;
       loaded.add(HistoryRecord.fromMap(item.key ?? "", data));
     }
-
-    // Show newest first
     setState(() {
       records = loaded.reversed.toList();
       loading = false;
     });
   }
 
-  // ── CO₂ color helper ──────────────────────────────────────
   Color co2Color(double v) {
     if (v <= 400) return K.green;
     if (v <= 700) return K.acc;
@@ -134,18 +115,12 @@ class _HistoryPageState extends State<HistoryPage> {
     return "Critical";
   }
 
-  // ═════════════════════════════════════════════════════════
-  // BUILD
-  // ═════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: K.bg,
       body: Column(children: [
-        // ── Header ────────────────────────────────────────
         _header(),
-
-        // ── Body ──────────────────────────────────────────
         Expanded(
           child: loading
               ? _loadingState()
@@ -157,7 +132,6 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  // ── RESPONSIVE HEADER ─────────────────────────────────────
   Widget _header() => Container(
         decoration: BoxDecoration(
           color: K.card,
@@ -177,7 +151,6 @@ class _HistoryPageState extends State<HistoryPage> {
           ),
         ),
       );
-
   Widget _headerWide() => SizedBox(
         height: 64,
         child: Padding(
@@ -185,7 +158,6 @@ class _HistoryPageState extends State<HistoryPage> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Brand icon
               Container(
                 width: 36,
                 height: 36,
@@ -213,7 +185,6 @@ class _HistoryPageState extends State<HistoryPage> {
                       style: ts(9, FontWeight.w500, K.sub, ls: 0.2)),
                 ],
               ),
-              // Fading divider
               Container(
                 width: 1,
                 height: 28,
@@ -230,7 +201,6 @@ class _HistoryPageState extends State<HistoryPage> {
                   ),
                 ),
               ),
-              // Page title
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -252,7 +222,6 @@ class _HistoryPageState extends State<HistoryPage> {
                 ],
               ),
               const Spacer(),
-              // Record count badge
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -267,7 +236,6 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
               ),
               const SizedBox(width: 10),
-              // Refresh button
               GestureDetector(
                 onTap: _loadHistory,
                 child: Container(
@@ -289,7 +257,6 @@ class _HistoryPageState extends State<HistoryPage> {
           ),
         ),
       );
-
   Widget _headerMobile() => Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
         child: Row(
@@ -327,7 +294,6 @@ class _HistoryPageState extends State<HistoryPage> {
               ),
             ),
             const SizedBox(width: 10),
-            // Record count
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
               decoration: BoxDecoration(
@@ -339,7 +305,6 @@ class _HistoryPageState extends State<HistoryPage> {
                   style: ts(11, FontWeight.w700, K.acc)),
             ),
             const SizedBox(width: 8),
-            // Refresh
             GestureDetector(
               onTap: _loadHistory,
               child: Container(
@@ -357,8 +322,6 @@ class _HistoryPageState extends State<HistoryPage> {
           ],
         ),
       );
-
-  // ── LOADING STATE ─────────────────────────────────────────
   Widget _loadingState() => Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           SizedBox(
@@ -370,8 +333,6 @@ class _HistoryPageState extends State<HistoryPage> {
           Text("Loading history…", style: ts(13, FontWeight.w600, K.sub)),
         ]),
       );
-
-  // ── EMPTY STATE ───────────────────────────────────────────
   Widget _emptyState() => Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(
@@ -390,8 +351,6 @@ class _HistoryPageState extends State<HistoryPage> {
               style: ts(12, FontWeight.w400, K.sub)),
         ]),
       );
-
-  // ── HISTORY LIST ──────────────────────────────────────────
   Widget _historyList() => ListView.separated(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
@@ -399,11 +358,8 @@ class _HistoryPageState extends State<HistoryPage> {
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (_, i) => _recordCard(records[i], i),
       );
-
-  // ── SINGLE RECORD CARD ────────────────────────────────────
   Widget _recordCard(HistoryRecord r, int index) {
     final c = co2Color(r.co2);
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -414,9 +370,7 @@ class _HistoryPageState extends State<HistoryPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Top row: index + timestamp + fan status ──────
           Row(children: [
-            // Record number badge
             Container(
               width: 32,
               height: 32,
@@ -467,14 +421,10 @@ class _HistoryPageState extends State<HistoryPage> {
               ]),
             ),
           ]),
-
           const SizedBox(height: 14),
           Container(height: 1, color: K.line),
           const SizedBox(height: 14),
-
-          // ── Sensor readings row ──────────────────────────
           Row(children: [
-            // Temperature
             Expanded(
                 child: _sensorTile(
               Icons.thermostat_rounded,
@@ -483,13 +433,11 @@ class _HistoryPageState extends State<HistoryPage> {
               K.orange,
               K.orangeSoft,
             )),
-            // Divider
             Container(
                 width: 1,
                 height: 40,
                 color: K.line,
                 margin: const EdgeInsets.symmetric(horizontal: 12)),
-            // Humidity
             Expanded(
                 child: _sensorTile(
               Icons.water_drop_rounded,
@@ -498,13 +446,11 @@ class _HistoryPageState extends State<HistoryPage> {
               K.blue,
               K.blueSoft,
             )),
-            // Divider
             Container(
                 width: 1,
                 height: 40,
                 color: K.line,
                 margin: const EdgeInsets.symmetric(horizontal: 12)),
-            // CO₂
             Expanded(
                 child: _sensorTile(
               Icons.air_rounded,
@@ -520,7 +466,6 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  // ── SENSOR TILE inside each card ──────────────────────────
   Widget _sensorTile(
     IconData icon,
     String label,

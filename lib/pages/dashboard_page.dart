@@ -139,8 +139,8 @@ class _DashboardPageState extends State<DashboardPage>
       _snack("Disable auto mode first", isWarn: true);
       return;
     }
-    await _db.update({"fan_status": v});
-    _snack("Fan turned $v");
+    await _db.update({"fan_command": v});
+    _snack("Fan command sent: $v");
   }
 
   Future<void> _toggleAuto(String v) async {

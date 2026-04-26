@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: unused_element
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,7 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import 'dashboard_page.dart';
 
-// ── Same color system as dashboard ────────────────────────────
 class K {
   static const acc = Color(0xFF4FDAFB);
   static const accSoft = Color(0xFFEBF9FE);
@@ -41,7 +40,6 @@ TextStyle ts(double sz, FontWeight w, Color c,
     GoogleFonts.dmSans(
         fontSize: sz, fontWeight: w, color: c, letterSpacing: ls, height: h);
 
-// ═════════════════════════════════════════════════════════════
 class GraphsPage extends StatefulWidget {
   const GraphsPage({super.key});
   @override
@@ -49,27 +47,21 @@ class GraphsPage extends StatefulWidget {
 }
 
 class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
-  // ── ORIGINAL LOGIC — untouched ────────────────────────────
   final DatabaseReference dbRef =
       FirebaseDatabase.instance.ref().child("iot_data_history");
-
   List<FlSpot> temperatureData = [];
   List<FlSpot> humidityData = [];
   List<FlSpot> co2Data = [];
-
   String selectedFilter = "temperature";
   bool loading = true;
-
   double avgValue = 0;
   double minValue = 0;
   double maxValue = 0;
   double latestValue = 0;
   int dataPoints = 0;
-
   late AnimationController _fadeController;
   late AnimationController _cardAnim;
   late Animation<double> _cardA;
-
   @override
   void initState() {
     super.initState();
@@ -93,7 +85,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  // ── ORIGINAL DATA LOADING — untouched ────────────────────
   Future<void> _loadData() async {
     setState(() => loading = true);
     final snapshot = await dbRef.get();
@@ -123,7 +114,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
     _cardAnim.forward();
   }
 
-  // ── ORIGINAL STATISTICS — untouched ──────────────────────
   void _calculateStatistics() {
     if (activeDataset.isEmpty) {
       avgValue = minValue = maxValue = latestValue = 0;
@@ -149,7 +139,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
     }
   }
 
-  // ── Sensor theme helpers ──────────────────────────────────
   Color get _accent {
     switch (selectedFilter) {
       case "humidity":
@@ -250,9 +239,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
     return K.red;
   }
 
-  // ═══════════════════════════════════════════════════════
-  // BUILD
-  // ═══════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -268,16 +254,12 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
                   child: AnimatedBuilder(
                     animation: _cardA,
                     builder: (_, __) => Column(children: [
-                      // 1. Compact filter pills
                       _slide(0, _filterPills()),
                       const SizedBox(height: 12),
-                      // 2. CHART — first big thing visible ──────
                       _slide(1, _chartCard()),
                       const SizedBox(height: 12),
-                      // 3. Slim dark stats strip
                       _slide(2, _statsStrip()),
                       const SizedBox(height: 12),
-                      // 4. Insights
                       _slide(3, _insightsCard()),
                     ]),
                   ),
@@ -313,8 +295,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
           Text("Loading data…", style: ts(13, FontWeight.w600, K.sub)),
         ]),
       );
-
-  // ── RESPONSIVE HEADER ─────────────────────────────────────
   Widget _header() => Container(
         decoration: BoxDecoration(
           color: K.card,
@@ -333,7 +313,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
           ),
         ),
       );
-
   Widget _headerWide() => SizedBox(
         height: 64,
         child: Padding(
@@ -420,7 +399,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
           ),
         ),
       );
-
   Widget _headerMobile() => Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
         child: Row(
@@ -482,7 +460,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
           ],
         ),
       );
-
   Widget _headerBtn(IconData icon, String label, VoidCallback onTap) =>
       GestureDetector(
         onTap: onTap,
@@ -500,8 +477,7 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
           ]),
         ),
       );
-
-  // ── COMPACT FILTER PILLS ──────────────────────────────────
+//fillter switch buttons
   Widget _filterPills() {
     final filters = [
       {
@@ -578,7 +554,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
     );
   }
 
-  // ── MAIN CHART — front and centre ────────────────────────
   Widget _chartCard() => Container(
         decoration: BoxDecoration(
           color: K.card,
@@ -588,7 +563,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Chart header bar
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Row(children: [
@@ -614,7 +588,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
                     ],
                   ),
                 ),
-                // Live value badge
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -633,7 +606,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
                   ]),
                 ),
                 const SizedBox(width: 8),
-                // Status badge
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
@@ -659,8 +631,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
                 child: activeDataset.isEmpty ? _emptyChart() : _buildChart(),
               ),
             ),
-
-            // Inline min/max/avg footer
             if (activeDataset.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -678,20 +648,17 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
           ],
         ),
       );
-
   Widget _footerDivider() => Container(
       width: 1,
       height: 14,
       margin: const EdgeInsets.symmetric(horizontal: 12),
       color: K.line);
-
   Widget _miniStat(IconData icon, String label, Color c) =>
       Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 12, color: c),
         const SizedBox(width: 5),
         Text(label, style: ts(11, FontWeight.w600, K.sub)),
       ]);
-
   Widget _emptyChart() => Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(
@@ -718,7 +685,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
     final double mag =
         math.pow(10, (math.log(rawStep) / math.ln10).floor()).toDouble();
     final double interval = (rawStep / mag).ceil() * mag;
-
     return LineChart(
       LineChartData(
         minX: 0,
@@ -738,14 +704,12 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          // ── Y axis — push far left so labels never touch the line ──
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 52, // wider reserved space
+              reservedSize: 52,
               interval: interval,
               getTitlesWidget: (v, meta) {
-                // skip the very top and bottom labels — they clip
                 if (v == meta.max || v == meta.min) {
                   return const SizedBox.shrink();
                 }
@@ -753,18 +717,18 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
                   padding: const EdgeInsets.only(right: 6),
                   child: Text(
                     v.toStringAsFixed(selectedFilter == "temperature" ? 1 : 0),
-                    style: ts(9, FontWeight.w700, _accent), // colored!
+                    style: ts(9, FontWeight.w700, _accent),
                     textAlign: TextAlign.right,
                   ),
                 );
               },
             ),
           ),
-          // ── X axis — sits cleanly below the chart ──────────────
+          // ── X axis
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 28, // taller reserved space
+              reservedSize: 28,
               interval: (activeDataset.length / 5).ceilToDouble().clamp(1, 60),
               getTitlesWidget: (v, meta) {
                 if (v == meta.max || v == meta.min) {
@@ -774,7 +738,7 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
                     v.toInt().toString(),
-                    style: ts(9, FontWeight.w700, _accent), // colored!
+                    style: ts(9, FontWeight.w700, _accent),
                   ),
                 );
               },
@@ -832,7 +796,6 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
     );
   }
 
-  // ── SLIM DARK STATS STRIP ─────────────────────────────────
   Widget _statsStrip() => Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
@@ -864,20 +827,16 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
           ],
         ),
       );
-
   Widget _stripDivider() => Container(
         width: 1,
         height: 36,
         color: Colors.white.withValues(alpha: 0.08),
         margin: const EdgeInsets.symmetric(horizontal: 4),
       );
-
-  // ── INSIGHTS CARD ─────────────────────────────────────────
   Widget _insightsCard() {
     final trend = latestValue > avgValue ? "Above" : "Below";
     final variance =
         avgValue == 0 ? 0.0 : (latestValue - avgValue).abs() / avgValue * 100;
-
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(

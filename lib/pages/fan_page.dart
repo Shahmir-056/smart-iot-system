@@ -99,14 +99,12 @@ class _FanPageState extends State<FanPage> with TickerProviderStateMixin {
       return;
     }
     final newStatus = isFanOn ? "OFF" : "ON";
-    await dbRef.update({"fan_status": newStatus});
+    await dbRef.update({"fan_command": newStatus});
     setState(() {
-      isFanOn = !isFanOn;
       totalOperations++;
-      lastAction = "Manual ${isFanOn ? 'activation' : 'deactivation'}";
+      lastAction = "Manual command: $newStatus";
     });
-    isFanOn ? _fanController.repeat() : _fanController.stop();
-    _showSnack("Fan turned $newStatus");
+    _showSnack("Fan command sent: $newStatus");
   }
 
   Future<void> _toggleAutoMode(bool value) async {
