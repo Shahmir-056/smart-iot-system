@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+// ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'login_page.dart';
 
-// ── Same color system as dashboard ────────────────────────────
 class K {
   static const acc = Color(0xFF4FDAFB);
   static const accSoft = Color(0xFFEBF9FE);
@@ -39,7 +38,6 @@ TextStyle ts(double sz, FontWeight w, Color c,
     GoogleFonts.dmSans(
         fontSize: sz, fontWeight: w, color: c, letterSpacing: ls, height: h);
 
-// ═════════════════════════════════════════════════════════════
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
   @override
@@ -48,14 +46,12 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage>
     with SingleTickerProviderStateMixin {
-  // ── ORIGINAL LOGIC — untouched ────────────────────────────
   late SharedPreferences prefs;
 
   String email = "";
   bool notificationsEnabled = true;
   bool soundEnabled = true;
 
-  // ── NEW: entrance animation ───────────────────────────────
   late AnimationController _cardAnim;
   late Animation<double> _cardA;
 
@@ -79,7 +75,6 @@ class _SettingsPageState extends State<SettingsPage>
     super.dispose();
   }
 
-  // ── ORIGINAL: load prefs ──────────────────────────────────
   Future<void> _initPrefs() async {
     prefs = await SharedPreferences.getInstance();
     _loadSettings();
@@ -97,7 +92,6 @@ class _SettingsPageState extends State<SettingsPage>
     if (value is bool) await prefs.setBool(key, value);
   }
 
-  // ── ORIGINAL: logout ──────────────────────────────────────
   Future<void> _logoutUser() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -158,7 +152,6 @@ class _SettingsPageState extends State<SettingsPage>
         ),
       ),
     );
-
     if (confirmed == true && mounted) {
       await prefs.clear();
       Navigator.pushAndRemoveUntil(
@@ -169,7 +162,6 @@ class _SettingsPageState extends State<SettingsPage>
     }
   }
 
-  // ── About dialog — redesigned ─────────────────────────────
   void _showAboutDialog() {
     showDialog(
       context: context,
@@ -197,7 +189,7 @@ class _SettingsPageState extends State<SettingsPage>
                 ),
                 const SizedBox(width: 12),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text("ArtifTree",
+                  Text("Artificial Tree",
                       style: ts(16, FontWeight.w800, K.ink, ls: -0.4)),
                   Text("Version 1.0.0", style: ts(11, FontWeight.w400, K.sub)),
                 ]),
@@ -273,7 +265,6 @@ class _SettingsPageState extends State<SettingsPage>
     ));
   }
 
-  // ── Slide entrance ────────────────────────────────────────
   Widget _slide(int i, Widget child) {
     final start = (i * 0.13).clamp(0.0, 1.0);
     final end = (start + 0.55).clamp(0.0, 1.0);
@@ -289,9 +280,6 @@ class _SettingsPageState extends State<SettingsPage>
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // BUILD
-  // ═══════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -320,7 +308,6 @@ class _SettingsPageState extends State<SettingsPage>
     );
   }
 
-  // ── RESPONSIVE HEADER ─────────────────────────────────────
   Widget _header() => Container(
         decoration: BoxDecoration(
           color: K.card,
@@ -361,15 +348,25 @@ class _SettingsPageState extends State<SettingsPage>
                         offset: const Offset(0, 3)),
                   ],
                 ),
-                child: const Icon(Icons.eco_rounded,
-                    color: Colors.white, size: 18),
+                // AFTER
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.asset(
+                    'assets/mainlogo.png',
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.eco_rounded,
+                        color: Colors.white, size: 18),
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text("ArtifTree",
+                  Text("Artificial Tree",
                       style: ts(14, FontWeight.w800, K.ink, ls: -0.4)),
                   Text("IoT Platform",
                       style: ts(9, FontWeight.w500, K.sub, ls: 0.2)),
@@ -435,8 +432,18 @@ class _SettingsPageState extends State<SettingsPage>
                       offset: const Offset(0, 3)),
                 ],
               ),
-              child:
-                  const Icon(Icons.eco_rounded, color: Colors.white, size: 18),
+              // AFTER
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.asset(
+                  'assets/mainlogo.png',
+                  width: 36,
+                  height: 36,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.eco_rounded,
+                      color: Colors.white, size: 18),
+                ),
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -457,7 +464,6 @@ class _SettingsPageState extends State<SettingsPage>
         ),
       );
 
-  // ── ACCOUNT CARD ──────────────────────────────────────────
   Widget _accountCard() => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -481,7 +487,6 @@ class _SettingsPageState extends State<SettingsPage>
             ),
             child: Center(
               child: Text(
-                // Show initials from email
                 email.isNotEmpty && email != "No account found"
                     ? email.substring(0, 2).toUpperCase()
                     : "AS",
@@ -518,7 +523,6 @@ class _SettingsPageState extends State<SettingsPage>
         ]),
       );
 
-  // ── NOTIFICATIONS CARD ────────────────────────────────────
   Widget _notificationsCard() => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -549,7 +553,6 @@ class _SettingsPageState extends State<SettingsPage>
             Container(height: 1, color: K.line),
             const SizedBox(height: 4),
 
-            // Push notifications toggle
             _toggleRow(
               icon: Icons.notifications_active_rounded,
               iconBg: K.orangeSoft,
@@ -565,7 +568,6 @@ class _SettingsPageState extends State<SettingsPage>
             ),
             Container(height: 1, color: K.line),
 
-            // Sound alerts toggle
             _toggleRow(
               icon: Icons.volume_up_rounded,
               iconBg: K.blueSoft,
@@ -629,7 +631,6 @@ class _SettingsPageState extends State<SettingsPage>
         ]),
       );
 
-  // ── APP INFO CARD ─────────────────────────────────────────
   Widget _appInfoCard() => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -670,8 +671,8 @@ class _SettingsPageState extends State<SettingsPage>
               iconBg: K.amberSoft,
               iconColor: K.amber,
               title: "Help & Support",
-              subtitle: "support@artifTree.com",
-              onTap: () => _showSnack("Contact: support@artifTree.com"),
+              subtitle: "support@artificialTree.com",
+              onTap: () => _showSnack("Contact: support@artificialTree.com"),
             ),
             Container(height: 1, color: K.line),
             _infoRow(
@@ -723,7 +724,6 @@ class _SettingsPageState extends State<SettingsPage>
         ),
       );
 
-  // ── LOGOUT CARD ───────────────────────────────────────────
   Widget _logoutCard() => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(

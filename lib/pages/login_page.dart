@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../main.dart';
 import '../services/google_auth_service.dart';
 
-// ── Same color system as dashboard ────────────────────────────
 class K {
   static const acc = Color(0xFF4FDAFB);
   static const accSoft = Color(0xFFEBF9FE);
@@ -29,7 +26,6 @@ TextStyle ts(double sz, FontWeight w, Color c,
     GoogleFonts.dmSans(
         fontSize: sz, fontWeight: w, color: c, letterSpacing: ls, height: h);
 
-// ═════════════════════════════════════════════════════════════
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
   @override
@@ -37,32 +33,25 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
-  // ── ORIGINAL LOGIC — untouched ────────────────────────────
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool saveLogin = false;
   bool isPasswordVisible = false;
   bool isLoading = false;
-
   final validUsers = {
     "shahmir@gmail.com": "565656",
     "ali@gmail.com": "070707",
     "ume@gmail.com": "141414",
   };
-
-  // ── NEW: animation controllers ────────────────────────────
-  late AnimationController _bgAnim; // slow floating background
-  late AnimationController _entryAnim; // staggered card entry
-  late AnimationController _btnAnim; // button press feedback
-
+  late AnimationController _bgAnim;
+  late AnimationController _entryAnim;
+  late AnimationController _btnAnim;
   late Animation<double> _bgA;
   late Animation<double> _entryA;
   late Animation<double> _btnScale;
-
   // Focus nodes for field border animation
   final _emailFocus = FocusNode();
   final _passwordFocus = FocusNode();
-
   @override
   void initState() {
     super.initState();
@@ -70,19 +59,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ));
-
-    // Slow looping background float
     _bgAnim =
         AnimationController(vsync: this, duration: const Duration(seconds: 8))
           ..repeat(reverse: true);
     _bgA = CurvedAnimation(parent: _bgAnim, curve: Curves.easeInOut);
-
-    // One-shot page entry
     _entryAnim = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1100));
     _entryA = CurvedAnimation(parent: _entryAnim, curve: Curves.easeOutCubic);
     _entryAnim.forward();
-
     // Button press scale
     _btnAnim = AnimationController(
         vsync: this,
@@ -91,7 +75,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         upperBound: 1.0)
       ..value = 1.0;
     _btnScale = _btnAnim;
-
     // Rebuild on focus change for border highlight
     _emailFocus.addListener(() => setState(() {}));
     _passwordFocus.addListener(() => setState(() {}));
@@ -111,7 +94,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  // ── ORIGINAL: load saved login ────────────────────────────
   Future<void> _loadSavedLogin() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final loggedIn = prefs.getBool("loggedIn") ?? false;
@@ -145,7 +127,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     prefs.setBool("loggedIn", false);
   }
 
-  // ── ORIGINAL: login ───────────────────────────────────────
   Future<void> _login() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
@@ -154,8 +135,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       _showSnack("Please enter email and password", isWarn: true);
       return;
     }
-
-    // Button press animation
     await _btnAnim.reverse();
     await _btnAnim.forward();
 
@@ -178,7 +157,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     }
   }
 
-  // ── ORIGINAL: Google login ────────────────────────────────
   Future<void> _googleLogin() async {
     final user = await GoogleAuthService.signInWithGoogle();
     if (user != null && mounted) {
@@ -192,7 +170,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     }
   }
 
-  // ── Snack — matches dashboard style ──────────────────────
   void _showSnack(String msg, {bool isWarn = false}) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -214,7 +191,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     ));
   }
 
-  // ── Staggered element reveal ──────────────────────────────
+  // element reveal
   Widget _reveal(double start, double end, Widget child) {
     final anim = CurvedAnimation(
         parent: _entryA,
@@ -228,19 +205,13 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // BUILD
-  // ═══════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: K.dark,
       resizeToAvoidBottomInset: true,
       body: Stack(children: [
-        // ── Animated background ────────────────────────────
         _animatedBackground(),
-
-        // ── Main content ───────────────────────────────────
         SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -251,11 +222,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // ── Brand block ──────────────────────
                     _reveal(0.0, 0.5, _brandBlock()),
                     const SizedBox(height: 36),
-
-                    // ── Login card ───────────────────────
                     _reveal(0.25, 0.85, _loginCard()),
                   ],
                 ),
@@ -267,7 +235,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
-  // ── ANIMATED BACKGROUND ───────────────────────────────────
   Widget _animatedBackground() => AnimatedBuilder(
         animation: _bgA,
         builder: (_, __) => Stack(children: [
@@ -305,14 +272,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         ),
       );
 
-  // ── BRAND BLOCK ───────────────────────────────────────────
   Widget _brandBlock() => Column(children: [
-        // Logo container
         Container(
           width: 72,
           height: 72,
           decoration: BoxDecoration(
-            color: K.acc,
             borderRadius: BorderRadius.circular(22),
             boxShadow: [
               BoxShadow(
@@ -322,10 +286,28 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               ),
             ],
           ),
-          child: const Icon(Icons.eco_rounded, color: Colors.white, size: 36),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: Image.asset(
+              'assets/mainlogo.png',
+              width: 72,
+              height: 72,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: K.acc,
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: const Icon(Icons.eco_rounded,
+                    color: Colors.white, size: 36),
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 18),
-        Text("ArtifTree",
+        Text("Artificial Tree",
             style: ts(32, FontWeight.w800, Colors.white, ls: -1.0)),
         const SizedBox(height: 6),
         // Subtitle pill
@@ -343,7 +325,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         ),
       ]);
 
-  // ── LOGIN CARD ────────────────────────────────────────────
   Widget _loginCard() => Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),
@@ -368,31 +349,25 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             Text("Sign in to continue", style: ts(13, FontWeight.w400, K.sub)),
             const SizedBox(height: 24),
 
-            // Email field
             _fieldLabel("Email address"),
             const SizedBox(height: 6),
             _emailField(),
             const SizedBox(height: 16),
 
-            // Password field
             _fieldLabel("Password"),
             const SizedBox(height: 6),
             _passwordField(),
             const SizedBox(height: 16),
 
-            // Save login checkbox
             _saveLoginRow(),
             const SizedBox(height: 24),
 
-            // Sign in button
             _signInButton(),
             const SizedBox(height: 14),
 
-            // Divider
             _orDivider(),
             const SizedBox(height: 14),
 
-            // Google button
             _googleButton(),
           ],
         ),
@@ -401,7 +376,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   Widget _fieldLabel(String label) =>
       Text(label, style: ts(12, FontWeight.w600, K.sub, ls: 0.2));
 
-  // ── EMAIL FIELD ───────────────────────────────────────────
   Widget _emailField() => AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
@@ -432,7 +406,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         ),
       );
 
-  // ── PASSWORD FIELD ────────────────────────────────────────
   Widget _passwordField() => AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
@@ -475,7 +448,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         ),
       );
 
-  // ── SAVE LOGIN ROW ────────────────────────────────────────
   Widget _saveLoginRow() => GestureDetector(
         onTap: () => setState(() => saveLogin = !saveLogin),
         child: Row(children: [
@@ -500,7 +472,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         ]),
       );
 
-  // ── SIGN IN BUTTON ────────────────────────────────────────
   Widget _signInButton() => ScaleTransition(
         scale: _btnScale,
         child: GestureDetector(
@@ -544,7 +515,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         ),
       );
 
-  // ── OR DIVIDER ────────────────────────────────────────────
   Widget _orDivider() => Row(children: [
         Expanded(child: Container(height: 1, color: K.line)),
         Padding(
@@ -554,7 +524,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         Expanded(child: Container(height: 1, color: K.line)),
       ]);
 
-  // ── GOOGLE BUTTON ─────────────────────────────────────────
   Widget _googleButton() => GestureDetector(
         onTap: _googleLogin,
         child: Container(
@@ -586,7 +555,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       );
 }
 
-// ── Grid background painter ───────────────────────────────────
 class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

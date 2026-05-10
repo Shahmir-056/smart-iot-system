@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'login_page.dart';
 
-// ── Colors ────────────────────────────────────────────────────
 class K {
   static const acc = Color(0xFF4FDAFB);
   static const accSoft = Color(0xFFEBF9FE);
@@ -279,7 +278,7 @@ class _DashboardPageState extends State<DashboardPage>
           Text(label, style: ts(13, FontWeight.w400, K.ink)),
         ]),
       );
-  // ── Profile ───────────────────────────────────────────────
+  //Profile
   void _showProfile() async {
     final p = await SharedPreferences.getInstance();
     final email = p.getString("email") ?? "Not saved";
@@ -347,7 +346,6 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  // BUILD
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -380,7 +378,7 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  // Staggered slide-up animation per card
+  // slide-up animation per card
   Widget _slide(int index, Widget child) {
     final delay = (index * 0.15).clamp(0.0, 1.0);
     final start = delay;
@@ -422,14 +420,12 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-// ── WEB / TABLET
   Widget _headerWide() => Container(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
         height: 64,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Brand
             Row(mainAxisSize: MainAxisSize.min, children: [
               Container(
                 width: 36,
@@ -445,15 +441,25 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                   ],
                 ),
-                child: const Icon(Icons.eco_rounded,
-                    color: Colors.white, size: 18),
+                // AFTER
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.asset(
+                    'assets/mainlogo.png',
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.eco_rounded,
+                        color: Colors.white, size: 18),
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text("ArtifTree",
+                  Text("Artificial Tree",
                       style: ts(14, FontWeight.w800, K.ink, ls: -0.4)),
                   Text("IoT Platform",
                       style: ts(9, FontWeight.w500, K.sub, ls: 0.2)),
@@ -477,7 +483,6 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
               ),
             ),
-            // Page context
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -587,7 +592,6 @@ class _DashboardPageState extends State<DashboardPage>
               ]),
             ),
             const SizedBox(width: 10),
-            // Avatar
             GestureDetector(
               onTap: _showProfile,
               child: Container(
@@ -613,7 +617,7 @@ class _DashboardPageState extends State<DashboardPage>
           ],
         ),
       );
-// ── MOBILE ───────────────────────────────────────────────────
+// moble
   Widget _headerMobile() => Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
         child: Row(
@@ -634,11 +638,21 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ],
               ),
-              child:
-                  const Icon(Icons.eco_rounded, color: Colors.white, size: 18),
+              // AFTER
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(11),
+                child: Image.asset(
+                  'assets/mainlogo.png',
+                  width: 38,
+                  height: 38,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.eco_rounded,
+                      color: Colors.white, size: 18),
+                ),
+              ),
             ),
             const SizedBox(width: 10),
-            // Title — Flexible prevents overflow
+            // Title s
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -771,7 +785,6 @@ class _DashboardPageState extends State<DashboardPage>
     return "${m[n.month - 1]} ${n.day}, ${n.year}";
   }
 
-  // ── Alert Banner ──────────────────────────────────────────
   Widget _alertBanner() => Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
@@ -804,7 +817,7 @@ class _DashboardPageState extends State<DashboardPage>
               )),
         ]),
       );
-  // ── CO2 Hero Card ─────────────────────────────────────────
+
   Widget _co2Hero() => AnimatedBuilder(
         animation: _pulseA,
         builder: (_, __) {
@@ -892,7 +905,6 @@ class _DashboardPageState extends State<DashboardPage>
           );
         },
       );
-
   Widget _segmentedBar(double val, double max, Color c) =>
       LayoutBuilder(builder: (_, box) {
         final w = box.maxWidth;
@@ -922,7 +934,7 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ]);
       });
-  // ── Sensor Grid — each card has its own personality ───────
+  //Sensor Grid
   Widget _sensorGrid() => Column(children: [
         Row(children: [
           Expanded(child: _tempCard()),
@@ -932,14 +944,13 @@ class _DashboardPageState extends State<DashboardPage>
         const SizedBox(height: 12),
         _smogCard(),
       ]);
-  // Temperature — warm gradient left border
+
   Widget _tempCard() => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: K.card,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: K.line, width: 1.5),
-          // Left accent strip via boxShadow inset trick
         ),
         child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -995,7 +1006,6 @@ class _DashboardPageState extends State<DashboardPage>
                   )),
             ]),
       );
-  // Humidity — blue toned, droplet feel
   Widget _humCard() => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -1053,7 +1063,6 @@ class _DashboardPageState extends State<DashboardPage>
                   )),
             ]),
       );
-  // Smog — full width, darker surface, more detail
   Widget _smogCard() {
     final c = _smogC;
     return Container(
@@ -1170,7 +1179,6 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ]),
       );
-
   Widget _chip(IconData icon, String label, String val, Color c) =>
       Row(mainAxisSize: MainAxisSize.min, children: [
         Container(
@@ -1190,7 +1198,6 @@ class _DashboardPageState extends State<DashboardPage>
               Text(val, style: ts(13, FontWeight.w700, c)),
             ]),
       ]);
-  //Controls
   Widget _controls() => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(

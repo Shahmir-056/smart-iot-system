@@ -2,19 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'pages/humidifier_page.dart';
 import 'firebase_options.dart';
-import 'theme/theme_provider.dart';
-import 'theme/app_theme.dart';
 
+import 'pages/humidifier_page.dart';
 import 'pages/dashboard_page.dart';
 import 'pages/graphs_page.dart';
 import 'pages/fan_page.dart';
 import 'pages/history_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/login_page.dart';
-import 'pages/splash_screen.dart'; // ← add this import
+import 'pages/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,12 +20,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
-      child: const MyApp(),
-    ),
-  );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -36,31 +28,35 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Smart IoT Dashboard',
-      themeMode: themeProvider.themeMode,
-      theme: AppThemes.lightTheme,
-      darkTheme: AppThemes.darkTheme,
+
+      // Removed themeMode, themeProvider, AppThemes
+      theme: ThemeData(
+        primaryColor: Colors.white,
+        scaffoldBackgroundColor: Colors.white,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+        ),
+      ),
 
       routes: {
         '/main': (context) => const MainNavigation(),
         '/login': (context) => const LoginPage(),
       },
 
-      // ── Splash screen is now the first thing shown ────────
-      // It handles the loggedIn check internally and navigates
-      // to MainNavigation or LoginPage on its own.
       home: const SplashScreen(),
     );
   }
 }
 
-// ════════════════════════════════════════════════════════════
-// MAIN NAVIGATION — bottom nav redesigned to match dashboard
-// ════════════════════════════════════════════════════════════
+// =========================================================
+// MAIN NAVIGATION
+// =========================================================
+
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
   @override
@@ -87,12 +83,11 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 
-  // ── Custom styled bottom nav matching dashboard theme ─────
   Widget _bottomNav() => Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(
-            top: BorderSide(color: const Color(0xFFE9ECF1), width: 1),
+          border: const Border(
+            top: BorderSide(color: Color(0xFFE9ECF1), width: 1),
           ),
           boxShadow: [
             BoxShadow(

@@ -1,5 +1,3 @@
-// ignore_for_file: unused_element
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -333,15 +331,25 @@ class _GraphsPageState extends State<GraphsPage> with TickerProviderStateMixin {
                         offset: const Offset(0, 3))
                   ],
                 ),
-                child: const Icon(Icons.eco_rounded,
-                    color: Colors.white, size: 18),
+                // AFTER
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.asset(
+                    'assets/mainlogo.png',
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.eco_rounded,
+                        color: Colors.white, size: 18),
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text("ArtifTree",
+                  Text("Artificial Tree",
                       style: ts(14, FontWeight.w800, K.ink, ls: -0.4)),
                   Text("IoT Platform",
                       style: ts(9, FontWeight.w500, K.sub, ls: 0.2)),
