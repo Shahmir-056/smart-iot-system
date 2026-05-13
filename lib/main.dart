@@ -1,9 +1,10 @@
+// ignore_for_file: unused_import, deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
-
 import 'pages/humidifier_page.dart';
 import 'pages/dashboard_page.dart';
 import 'pages/graphs_page.dart';
@@ -31,8 +32,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Smart IoT Dashboard',
-
-      // Removed themeMode, themeProvider, AppThemes
       theme: ThemeData(
         primaryColor: Colors.white,
         scaffoldBackgroundColor: Colors.white,
@@ -42,20 +41,14 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-
       routes: {
         '/main': (context) => const MainNavigation(),
         '/login': (context) => const LoginPage(),
       },
-
       home: const SplashScreen(),
     );
   }
 }
-
-// =========================================================
-// MAIN NAVIGATION
-// =========================================================
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
